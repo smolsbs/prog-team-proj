@@ -5,6 +5,7 @@ def is_blank(l: str) -> bool:
     return len(l.strip(" ")) == 0
 
 
+
 def parse():
     fp = open("dados.txt")
     data = [l for l in fp.read().split("\n")]
@@ -18,58 +19,55 @@ def parse():
 
 def boundaries(data: list[str]):
     boundaries = []
-    s = None
+    start = None
     for (idx,l) in enumerate(data):
-        if s is None:
+        if start is None:
             if not is_blank(l):
-                s = idx
+                start = idx
         else:
             if is_blank(l):
-                boundaries.append((s,idx))
-                s = None
+                boundaries.append((start,idx))
+                start = None
     return boundaries
 
 
 def parse_chunk(chunk_lines: list[str]):
     header = None
     for (idx, l) in enumerate(chunk_lines):
+        print(l[-1])
         if l[-1] == " ":
             header = idx-1
             break
     parse_header(chunk_lines[:header])
 
+from pprint import pprint
+def parse_header(hLines: list[str]):
+    aux = defaultdict(list)
 
-def parse_header(headers: list[str]):
-    h = defaultdict(list)
-
-    for line in headers:
+    for line in hLines:
         match line[-1]:
             case "1":
-                h[1].append(line)
-                break
+                aux[1].append(line)
             case "2":
-                h[2].append(line)
-                break
+                aux[2].append(line)
             case "3":
-                h[3].append(line)
-                break
+                aux[3].append(line)
             case "5":
-                h[5].append(line)
-                break
+                aux[5].append(line)
             case "6":
-                h[6].append(line)
-                break
+                aux[6].append(line)
             case "E":
-                h["E"].append(line)
-                break
+                aux["E"].append(line)
             case "I":
-                h["I"].append(line)
-                break
+                aux["I"].append(line)
             case _:
                 raise NotImplemented
-    for (k,v) in h.items():
+
+    headerDict = dict()
+    for (k,v) in aux.items():
         if len(v) != 0:
-            FUNCS[k](v)
+            headerDict.update(FUNCS[k](v))
+    pprint(headerDict)
 
 
 def parse_type_1(data: list[str]):
@@ -90,16 +88,15 @@ def parse_type_1(data: list[str]):
     depth = float(aux[38:43])
     rep_ag = aux[45:48]
 
-    hypo = {"dt": dt.isoformat(), "Distance Indicator": dist_ind, "Event ID": eId, "Lat": lat, "Long": long, "Depth": depth, "Agency": rep_ag, "magnitudes": list()}
+    hypo = {"DateTime": dt.isoformat(), "Distance Indicator": dist_ind, "Event ID": eId, "Lat": lat, "Long": long, "Depth": depth, "Agency": rep_ag, "Magnitudes": list()}
 
-    for (idx, l) in enumerate(data):
-        hypo["magnitudes"] = hypo["magnitudes"] + parse_mag(l, idx)
+    for l in data:
+        hypo["Magnitudes"] = hypo["Magnitudes"] + parse_mag(l)
     
-    print(hypo)
     return hypo
 
 
-def parse_mag(line: str, idx: int) -> list:
+def parse_mag(line: str):
     magnitudes = []
     base = 55
     while base < 80:
@@ -113,22 +110,30 @@ def parse_mag(line: str, idx: int) -> list:
 
     
 def parse_type_2(data: list[str]):
-    pass
+    return {}
 
 def parse_type_3(data: list[str]):
-    pass
+    return {}
 
 def parse_type_5(data: list[str]):
-    pass
+    return {}
 
 def parse_type_6(data: list[str]):
-    pass
+    return {}
 
 def parse_type_e(data: list[str]):
-    pass
+    aux = data[0]
+    error = {"Gap": int(aux[5:8]), "Origin": float(aux[14:20]), "Error_lat": float(aux[24:30]), "Error_long": float(aux[32:38]), "Error_depth": float(aux[38:43]), "Cov_xy": float(aux[43:55]), "Cov_xz": float(aux[55:67]), "Cov_yz": float(aux[67:79])}
+    return error
+
 
 def parse_type_f(data: list[str]):
-    pass
+    return {}
 
-FUNCS = {1: parse_type_1, 2: parse_type_2, 3: parse_type_3, 5: parse_type_5, 6: parse_type_6, "E": parse_type_e, "F": parse_type_f}
+def parse_type_i(data: list[str]):
+    return {}
+
+FUNCS = {1: parse_type_1, 2: parse_type_2, 3: parse_type_3, 5: parse_type_5, 6: parse_type_6, "E": parse_type_e, "F": parse_type_f, "I": parse_type_i}
+
+
 parse()
