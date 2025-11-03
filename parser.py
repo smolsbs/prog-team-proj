@@ -1,6 +1,10 @@
-from collections import defaultdict
-from datetime import datetime, time
+import io
 import warnings
+
+from collections import defaultdict
+from datetime import datetime
+
+import pandas as pd
 
 def is_blank(l: str) -> bool:
     return len(l.strip(" ")) == 0
@@ -19,17 +23,36 @@ def parse_int(v:str) -> int | None:
     except ValueError:
         return None
 
+def into_dataframe(data) -> pd.DataFrame:
+    if len(data) == 0:
+        return pd.DataFrame()
+    aux = {k: [] for k in data.keys()}
+    for (k,v) in data.items():
+        aux[k].append(v)
 
-def parse():
-    fp = open("dados.txt")
+    return pd.DataFrame(data=aux)
+
+
+def test(d1, d2):
+    for col in d2.columns:
+        d1.at[0, col] = d2[col].tolist()
+    return d1
+
+# ------------ principal
+
+def parse(fname="dados.txt"):
+    fp = open(fname)
     data = [l for l in fp.read().split("\n")]
     chunks = boundaries(data)
-
-    for c in chunks:
-        yield parse_chunk(data[c[0]:c[1]])
+    df = pd.DataFrame()
+    for (idx,c) in enumerate(chunks):
+        a = parse_chunk(data[c[0]:c[1]], idx)
+        aux = pd.concat([df, a], axis=0, ignore_index=True)
+        df = aux
 
     fp.close()
 
+    return df
 
 def boundaries(data: list[str]):
     boundaries = []
@@ -45,20 +68,20 @@ def boundaries(data: list[str]):
     return boundaries
 
 
-def parse_chunk(chunk_lines: list[str]):
+def parse_chunk(chunk_lines: list[str], iD):
     hIdx = None
     for (idx, l) in enumerate(chunk_lines):
         if l[-1] == "7":
             hIdx = idx
             break
-    if hIdx is None:
-        raise ValueError("Expected a '7' phase header in chunk_lines")
-    else:
-        headersRet = parse_header(chunk_lines[:hIdx])
-        phaseRet = parse_type_7(chunk_lines[hIdx+1:])
-    eventData = headersRet | phaseRet
+    headersRet = parse_header(chunk_lines[:hIdx])
+    phaseRet = parse_type_7(chunk_lines[hIdx:])
 
-    return eventData
+    hDF = into_dataframe(headersRet)
+    hDF["ID"] = iD
+    phaseRet["ID"] = iD
+
+    return pd.concat([hDF, phaseRet])
     
 
 def parse_header(hLines: list[str]):
@@ -119,7 +142,6 @@ def parse_type_1(data: list[str]):
     rep_ag = aux[45:48]
 
     hypo = {"DateTime": dt.isoformat(), "Distance Indicator": dist_ind, "Event ID": eId, "Lat": lat, "Long": long, "Depth": depth, "Agency": rep_ag, "Magnitudes": list()}
-
     for l in data:
         hypo["Magnitudes"] = hypo["Magnitudes"] + parse_mag(l)
 
@@ -138,19 +160,12 @@ def parse_type_6(data: list[str]):
         waves.append(l.strip().split(" ")[0])
     return {"Wave": waves}
 
-
 def parse_type_7(data: list[str]):
-    phases = []
-    # nordic format
-    for l in data:
-        h = int(l[18:20])
-        m = int(l[20:22])
-        sec = int(l[23:25])
-        mil = int(l[26:28]) * 10**4
-        t = time(h,m,sec,mil)
-        phases.append({"Stat:":l[1:5], "Com": l[6:10], "I": l[9].strip(), "Phase": l[10:15].strip(), "Polarity": l[16].strip(), "Time": t.isoformat(), "Duration": parse_flt(l[29:33]), "Amplitude": parse_flt(l[34:40]), "Period": parse_flt(l[41:45]), "Azimuth": parse_flt(l[46:51]), "Velocity":parse_int(l[52:56]), "AIN": parse_int(l[57:60]), "AR": l[61:63], "Travel Time": parse_flt(l[63:67]), "Weigth": parse_int(l[67:70]), "Distance": float(l[71:75]), "CAZ": int(l[76:79])})
+    aux = io.StringIO("\n".join(data))
+    dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8), (9,10), (10,15), (16,17), (18,22), (23,28), (29,33), (34,40), (41,45), (46,50), (51,56), (57,60), (61,63), (64,68), (69,70), (72,75), (76,79)])
+    return dados
 
-    return {"Phases": phases}
+
 
 def parse_type_e(data: list[str]):
     aux = data[0]
@@ -170,5 +185,4 @@ def parse_type_i(data: list[str]):
 
 FUNCS = {1: parse_type_1, 3: parse_type_3, 6: parse_type_6, "E": parse_type_e, "F": parse_type_f, "I": parse_type_i}
 
-
-print(next(parse()))
+parse()
