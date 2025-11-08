@@ -65,19 +65,32 @@ def main():
                     db = parser.parse(fname)
                 else:
                     retInfo = "Nenhum ficheiro encontrado!"
-                pass
+
             case "2":
-                if db is None:
+                if db is not None:
                     continue
-                pass
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
             case "3":
-                if db is None:
-                    continue
-                pass
+                if db is not None:
+                    a = _get_uniques(db)
+                    ev_ids = _show_events(a)
+
+                    _select = input("Qual a entrada a apagar: ")
+
+                    db = db.drop(db[db["ID"] == ev_ids[_select]].index)
+
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
             case "4":
                 if db is not None:
-                    ids = crud.read_ids(db)
-                    print(ids)
+                    a = _get_uniques(db)
+                    ev_ids = _show_events(a)
+
+                    _select = input("Qual a entrada a visualizar: ")
+                    _view_event(db, ev_ids[_select])
 
                     input()
 
@@ -100,7 +113,23 @@ def _file_exists(name: str) -> bool:
     if name in currFiles:
         return True
     return False
-   
+
+def _get_uniques(df) -> pd.DataFrame:
+    return df.get(["ID", "Data", "Regiao"]).drop_duplicates(subset="ID", keep="first")
+
+def _show_events(df):
+    events = {}
+    idx = 1
+    for (_, row) in df.iterrows():
+        print(f"{idx:2d}| {row["Regiao"]}")
+        events[str(idx)] = row["ID"]
+        idx += 1
+    return events
+
+def _view_event(df, id):
+    for idx, row in df.loc[df["ID"] == id ].iterrows():
+        print(row)
+
 
 
 if __name__ == '__main__':
