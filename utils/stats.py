@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import numpy as np
 
-STAT_HEADER ="""=== Earthquakes ===
+STAT_HEADER ="""=== Terramotos ===
  == Estatísticas == 
 """
 
@@ -51,12 +51,14 @@ def stat_menu(df: pd.DataFrame):
 
         match usrIn:
             case "1":
-                # TODO: verificar se estamos a tratar de numeros ou strings
                 c = filter_submenu("Média")
 
                 if c is not None:
                     retValue = average(df, c)
-                    print(f"A média de {c} é {retValue}")
+                    if retValue:
+                        print(f"A média de {c} é {retValue}")
+                    else:
+                        print("Um erro aconteceu. Nada a apresentar de momento.")
                 else:
                     continue
 
@@ -65,17 +67,22 @@ def stat_menu(df: pd.DataFrame):
 
                 if c is not None:
                     retValue = variance(df, c)
-                    print(f"A variância dos dados de {c} é {retValue}")
+                    if retValue:
+                        print(f"A variância dos dados de {c} é {retValue}")
+                    else:
+                        print("Um erro aconteceu. Nada a apresentar de momento.")
                 else:
                     continue
 
             case "3":
-                # TODO: verificar se estamos a tratar de numeros ou strings
                 c = filter_submenu("Desvio Padrão")
 
                 if c is not None:
                     retValue = std_dev(df, c)
-                    print(f"O desvio padrão de {c} é {retValue}")
+                    if retValue:
+                        print(f"O desvio padrão de {c} é {retValue}")
+                    else:
+                        print("Um erro aconteceu. Nada a apresentar de momento.")
                 else:
                     continue
 
@@ -112,7 +119,7 @@ def stat_menu(df: pd.DataFrame):
 
             case _:
                 pass
-        input("Clica Enter para continuar")
+        input("Clica `Enter` para continuar")
 
 
 def average(df: pd.DataFrame, filter_by):
@@ -121,8 +128,10 @@ def average(df: pd.DataFrame, filter_by):
 
     if filter_by == "Magnitudes":
         values = _unpack_mags(values)
-
-    return np.average(values)
+    try:
+        return np.average(values)
+    except:
+        return None
 
 
 def variance(df, filter_by):
@@ -132,7 +141,10 @@ def variance(df, filter_by):
     if filter_by == "Magnitudes":
         values = _unpack_mags(values)
 
-    return np.var(values)
+    try:
+        return np.var(values)
+    except:
+        return None
 
 
 def std_dev(df, filter_by):
@@ -142,7 +154,10 @@ def std_dev(df, filter_by):
     if filter_by == "Magnitudes":
         values = _unpack_mags(values)
     
-    return np.std(values)
+    try:
+        return np.std(values)
+    except:
+        return None
 
 
 def max_v(df, filter_by):
@@ -163,6 +178,7 @@ def min_v(df, filter_by):
         values = _unpack_mags(values)
     
     return np.min(values)
+
 
 def moda(df, filter_by):
     events = df.drop_duplicates(subset="ID", keep='first')

@@ -1,28 +1,36 @@
 # pyright: basic
 
 import pandas as pd
-from . import parser
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
 
+# -- globals
+
 HEADER_COLS = ["Data", "Distancia", "Tipo Ev", "Lat", "Long", "Prof", "Magnitudes"]
-TABLE_READ_RET = ["Data", "Lat", "Long", "Distancia", "Tipo Ev", "Amplitude"]
+TABLE_READ_RET = ["Estacao","Componente","", "Amplitude"]
+
+# -- helper funcs
 
 def _get_uniques(df) -> pd.DataFrame:
     return df.get(["ID", "Data", "Regiao"]).drop_duplicates(subset="ID", keep="first")
+
 
 def _show_events(df):
     for (_, row) in df.iterrows():
         print(f"{row["ID"]}: {row["Regiao"]}")
 
+# -- main
+
 def read_ids(df):
     ids = _get_uniques(df)
     _show_events(ids)
 
+
 def get_unique_events_table(df):
     return df.drop_duplicates(subset="ID", keep="first")
+
 
 def read_header(df, event_id):
     # Informações do header do evento
@@ -37,12 +45,13 @@ def read_header(df, event_id):
     infoString = f"Header do evento {event_id}:\n" + "\n".join(info) 
     return infoString
 
+
 def show_table(df, retCols=TABLE_READ_RET):
     print(df.loc[:,retCols])
 
+
 def get_table(df, event_id):
     rows = df[df["ID"] == event_id]
-    rows = rows.drop("ID", axis=1)
     return rows
 
 
@@ -61,11 +70,13 @@ def read_table_row(df, event_id, row_number_1):
         info.append(f"{i+1} {col}: {row[col]}")
     return f"Linha {row_number_1:02d} do evento {event_id}:\n" + "\n".join(info) 
 
+
 def update_table_row(df, row_line, new_data):
     for key, value in new_data.items():
         if key in df.columns:
             df.loc[row_line, key] = value
     return f"Linha {row_line} do evento atualizada com sucesso."
+
 
 def update_header(df, event_id, new_data):
     # atualiza o header de um evento
@@ -74,16 +85,19 @@ def update_header(df, event_id, new_data):
             df.loc[(df["ID"] == event_id) | df.iloc[0], key] = value
     return f"Header do evento {event_id} atualizado com sucesso."
 
+
 def delete_event(df, event_id):
     # Apaga um evento inteiro (header + tabela)
     new_df = df.drop(df[df["ID"] == event_id].index)
     print(f"Evento {event_id} apagado!")
     return new_df
 
+
 def delete_table_row(df, event_id, row_number):
     # Apaga uma linha específica da tabela do evento
     new_df = df.drop([row_number]).reset_index(drop=True)
     return new_df
+
 
 def create_blank_event(df, event_id):
     # Criar um evento vazio com linha de header e 1 linha de coluna
@@ -98,7 +112,7 @@ def create_blank_event(df, event_id):
 
     return new_df
 
-    
+
 def create_table_row(df, event_id, row_number_1):
     event_rows = df[df["ID"] == event_id]
     if event_rows.empty:

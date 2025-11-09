@@ -2,6 +2,7 @@
 # pyright: basic
 
 import os
+from datetime import datetime
 
 import pandas as pd
 
@@ -13,11 +14,10 @@ MENU ="""[1] Criar a base de dados
 [2] Atualizar uma entrada
 [3] Apagar um evento
 [4] Apagar uma entrada de um evento
-[5] Visualizar uma entrada
+[5] Visualizar um evento
 [6] Guardar como JSON
 [7] Guardar como CSV
 [8] Estatísticas
-[9] Atualizar uma entrada de um evento
 
 [Q] Sair
 """
@@ -78,9 +78,22 @@ def main():
 
             case "2":
                 if db is not None:
-                    continue
-                else:
-                    retInfo = "Base de dados não encontrada!"
+                    crud.read_ids(db)
+                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
+
+                    if not _event_exists(db, eid_choice):
+                        retInfo = "ID do event não encontrado!"
+
+                    else:
+                        table = crud.get_table(db, eid_choice)
+                        crud.show_table(table)
+                        row_choice = _get_usr_input("Escolhe a linha a atualizar: ", int)
+                        new_data = {}
+                        for col in crud.TABLE_READ_RET:
+                            val = _get_usr_input(f"Novo valor para {col} (Enter para manter o valor atual): ")
+                            if val is not None:
+                                new_data[col] = val
+                        crud.update_table_row(db, row_choice, new_data)
 
             case "3":
                 if db is not None:
@@ -111,13 +124,10 @@ def main():
                         table = crud.get_table(db, eid_choice)
                         _prettify_event(table)
                         crud.show_table(table)
-                        row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
-                        # TODO: balizar a escolha para apenas as linhas do evento em questao
-                        row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
 
-                        
+                        row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
                         # TODO: balizar a escolha para apenas as linhas do evento em questao
-                        row_choice = _get_usr_input("Escolhe a linha a apagar: ", int)
+
                         db = crud.delete_table_row(db, eid_choice, row_choice)
                         new_table = crud.get_table(db, eid_choice)
                         crud.show_table(new_table)
@@ -137,6 +147,7 @@ def main():
 
                     else:
                         table = crud.get_table(db, choice)
+                        _prettify_event(table)
                         crud.show_table(table)
                         input()
 
@@ -166,25 +177,6 @@ def main():
                     stats.stat_menu(db)
                 else:
                     retInfo = "Base de dados não encontrada!"
-
-            case "9":
-                if db is not None:
-                    crud.read_ids(db)
-                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
-
-                    if not _event_exists(db, eid_choice):
-                        retInfo = "ID do event não encontrado!"
-
-                    else:
-                        table = crud.get_table(db, eid_choice)
-                        crud.show_table(table)
-                        row_choice = _get_usr_input("Escolhe a linha a atualizar: ", int)
-                        new_data = {}
-                        for col in crud.TABLE_READ_RET:
-                            val = _get_usr_input(f"Novo valor para {col} (Enter para manter o valor atual): ")
-                            if val is not None:
-                                new_data[col] = val
-                        crud.update_table_row(db, row_choice, new_data)
 
             case "q":
                 isRunning = False
@@ -219,11 +211,6 @@ def _get_usr_input(msg:str, asType=str):
 def _prettify_event(df):
     preambleInfo = df.drop_duplicates(subset="ID", keep="first")
     stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
-    info = df.drop_duplicates(subset="Data", keep="first")
-    stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
-    data = datetime.fromisoformat(info.Data.values[0]).strftime("%c")
-    print(f"Região: {info["Regiao"].values[0]}\nData: {data}\nLatitude: {info.Lat.values[0]}\nLongitude: {info.Long.values[0]}"
-        + f"\nProfundidade: {info.Prof.values[0]}\nTipo de evento: {info['Tipo Ev'].values[0]}\n")
     info = df.drop_duplicates(subset="Data", keep="first")
     data = datetime.fromisoformat(info.Data.values[0]).strftime("%c")
     print(f"Região: {info["Regiao"].values[0]}\nData: {data}\nLatitude: {info.Lat.values[0]}\nLongitude: {info.Long.values[0]}"
