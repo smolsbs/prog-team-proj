@@ -6,7 +6,7 @@ import os
 
 import pandas as pd
 
-from utils import parser, crud
+from utils import parser, crud, stats
 
 HEADER = """=== Terramotos ==="""
 
@@ -17,6 +17,7 @@ MENU ="""[1] Criar a base de dados
 [5] Visualizar uma entrada
 [6] Guardar como JSON
 [7] Guardar como CSV
+[8] Estatísticas
 
 [Q] Sair
 """
@@ -140,6 +141,12 @@ def main():
                     if fname is None:
                         fname = "valores.csv"
                     guardar_csv(db, fname)
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
+            case "8":
+                if db is not None:
+                    pass
                 else:
                     retInfo = "Base de dados não encontrada!"
 

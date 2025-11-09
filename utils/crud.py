@@ -21,6 +21,8 @@ def read_ids(df):
     ids = _get_uniques(df)
     _show_events(ids)
 
+def get_unique_events_table(df):
+    return df.drop_duplicates(subset="ID", keep="first")
 
 def read_header(df, event_id):
     # Informações do header do evento

@@ -1,6 +1,5 @@
 # pyright: basic
 import io
-import warnings
 
 from collections import defaultdict
 from datetime import datetime
