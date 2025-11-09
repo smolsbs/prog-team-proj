@@ -104,7 +104,13 @@ def main():
                         retInfo = "ID do event não encontrado!"
 
                     else:
-                        db = crud.delete_event(db, eid_choice)
+                        table = crud.get_table(db, eid_choice)
+                        crud.show_table(table)
+                        row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
+                        db = crud.delete_table_row(db, eid_choice, row_choice)
+                        new_table = crud.get_table(db, eid_choice)
+                        crud.show_table(new_table)
+                        print(f"Linha {row_choice} apagada com sucesso!")
                         input()
 
                 else:

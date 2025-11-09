@@ -8,7 +8,7 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
 
 HEADER_COLS = ["Data", "Distancia", "Tipo Ev", "Lat", "Long", "Prof", "Magnitudes"]
-TABLE_READ_RET = ["Data", "Lat", "Long", "Distancia", "Tipo Ev"]
+TABLE_READ_RET = ["Data", "Lat", "Long", "Distancia", "Tipo Ev", "Amplitude"]
 
 def _get_uniques(df) -> pd.DataFrame:
     return df.get(["ID", "Data", "Regiao"]).drop_duplicates(subset="ID", keep="first")
@@ -39,7 +39,6 @@ def read_header(df, event_id):
 
 def show_table(df, retCols=TABLE_READ_RET):
     print(df.loc[:,retCols])
-
 
 def get_table(df, event_id):
     rows = df[df["ID"] == event_id]
@@ -86,13 +85,9 @@ def delete_event(df, event_id):
     print(f"Evento {event_id} apagado!")
     return new_df
 
-def delete_table_row(df, event_id, row_number_1):
+def delete_table_row(df, event_id, row_number):
     # Apaga uma linha específica da tabela do evento
-    row_number_0 = row_number_1 - 1
-    table = get_table(df, event_id)
-    if row_number_0 < 0 or row_number_0 >= len(table):
-        return f"Linha {row_number_1} não pertence ao evento {event_id}."
-    new_df = df.drop(table.index[row_number_0])
+    new_df = df.drop([row_number]).reset_index(drop=True)
     return new_df
 
 def create_blank_event(df, event_id):
