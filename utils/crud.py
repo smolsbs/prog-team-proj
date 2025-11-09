@@ -61,16 +61,11 @@ def read_table_row(df, event_id, row_number_1):
         info.append(f"{i+1} {col}: {row[col]}")
     return f"Linha {row_number_1:02d} do evento {event_id}:\n" + "\n".join(info) 
 
-def update_table_row(df, event_id, row_number_1, new_data):
-    # atualiza uma linha específica da tabela do evento
-    row_number_0 = row_number_1 - 1
-    table = get_table(df, event_id)
-    if row_number_0 < 0 or row_number_0 >= len(table):
-        return f"Linha {row_number_1} não pertence ao evento {event_id}."
+def update_table_row(df, row_line, new_data):
     for key, value in new_data.items():
-        if key in table.columns:
-            df.loc[(df["ID"] == event_id) & (df.index == table.index[row_number_0]), key] = value
-    return f"Linha {row_number_1} do evento {event_id} atualizada com sucesso."
+        if key in df.columns:
+            df.loc[row_line, key] = value
+    return f"Linha {row_line} do evento atualizada com sucesso."
 
 def update_header(df, event_id, new_data):
     # atualiza o header de um evento
