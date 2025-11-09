@@ -191,4 +191,3 @@ def _parse_type_i(data: list[str]):
 
 FUNCS = {1: _parse_type_1, 3: _parse_type_3, 6: _parse_type_6, "E": _parse_type_e, "I": _parse_type_i}
 
-parse("dados.txt")

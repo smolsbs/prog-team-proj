@@ -146,7 +146,7 @@ def main():
 
             case "8":
                 if db is not None:
-                    pass
+                    stats.stat_menu(db)
                 else:
                     retInfo = "Base de dados não encontrada!"
 
@@ -180,6 +180,9 @@ def _get_usr_input(msg:str, asType=str):
         return None
     return asType(usrIn)
 
+def _prettify_event(df):
+    preambleInfo = df.drop_duplicates(subset="ID", keep="first")
+    stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
 
 if __name__ == '__main__':
     main()
