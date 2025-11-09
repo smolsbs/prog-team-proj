@@ -35,7 +35,7 @@ def guardar_df(df: pd.DataFrame, fname: str) -> bool:
 def guardar_json(df: pd.DataFrame, fname: str) -> bool:
     with open(fname , "w") as fp:
         try:
-            json.dump(df.to_json(), fp)
+            df.to_json(fp)
         except:
             return False
     return True
@@ -67,7 +67,10 @@ def main():
                 if fname is None:
                     fname = "dados.txt"
 
-                if _file_exists(fname):
+                if _file_exists(fname) and fname.endswith(".json"):
+                    db = pd.read_json(fname)
+                    input("Base de dados populada. Enter para voltar ao menu inicial")
+                elif _file_exists(fname):
                     db = parser.parse(fname)
                     input("Base de dados populada. Enter para voltar ao menu inicial")
                 else:
@@ -106,7 +109,7 @@ def main():
                     else:
                         table = crud.get_table(db, eid_choice)
                         crud.show_table(table)
-                        row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
+                        row_choice = _get_usr_input("Escolhe a linha a apagar: ", int)
                         db = crud.delete_table_row(db, eid_choice, row_choice)
                         new_table = crud.get_table(db, eid_choice)
                         crud.show_table(new_table)
@@ -134,7 +137,7 @@ def main():
 
             case "6":
                 if db is not None:
-                    fname = _get_usr_input("Nome do ficheiro a guardar?")
+                    fname = _get_usr_input("Nome do ficheiro a guardar? ")
                     if fname is None:
                         fname = "valores.json"
                     guardar_json(db, fname)
@@ -143,7 +146,7 @@ def main():
 
             case "7":
                 if db is not None:
-                    fname = _get_usr_input("Nome do ficheiro a guardar?")
+                    fname = _get_usr_input("Nome do ficheiro a guardar? ")
                     if fname is None:
                         fname = "valores.csv"
                     guardar_csv(db, fname)
