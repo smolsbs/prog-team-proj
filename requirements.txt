@@ -1,2 +1,2 @@
-pytest==8.4.2
+numpy==2.3.4
 pandas==2.3.3
