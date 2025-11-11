@@ -9,7 +9,7 @@ pd.set_option('display.width', 150)
 # -- globals
 
 HEADER_COLS = ["Data", "Distancia", "Tipo Ev", "Lat", "Long", "Prof", "Magnitudes"]
-TABLE_READ_RET = ["Estacao","Componente","", "Amplitude"]
+TABLE_READ_RET = ["Estacao", "Hora", "Min", "Seg", "Componente", "Amplitude"]
 
 # -- helper funcs
 
@@ -95,8 +95,16 @@ def delete_event(df, event_id):
 
 def delete_table_row(df, event_id, row_number):
     # Apaga uma linha específica da tabela do evento
+    # Cria uma nova linha vazia no dataframe na posição insertion_point
+    matching_indices = df.index[df['ID'] == event_id].tolist()
+
+    first_event_row = matching_indices[0]
+    last_event_row = matching_indices[-1]
+
+    if row_number < first_event_row or row_number > last_event_row:
+        return df, f"Erro: A posição a apagar, {row_number} está fora do intervalo permitido para o evento {event_id}."
     new_df = df.drop([row_number]).reset_index(drop=True)
-    return new_df
+    return new_df, f"Linha {row_choice} apagada com sucesso!"
 
 
 def create_blank_event(df, event_id):
@@ -113,7 +121,32 @@ def create_blank_event(df, event_id):
     return new_df
 
 
-def create_table_row(df, event_id, row_number_1):
+def create_table_row(df, event_id, insertion_point):
+    # Cria uma nova linha vazia no dataframe na posição insertion_point
+    matching_indices = df.index[df['ID'] == event_id].tolist()
+
+    first_event_row = matching_indices[0]
+    last_event_row = matching_indices[-1]
+
+    if insertion_point < first_event_row or insertion_point > last_event_row + 1:
+        return df, f"Erro: A posição de inserção {insertion_point} está fora do intervalo permitido para o evento {event_id}"
+
+    new_row_df = pd.DataFrame(columns=df.columns, index=[0])
+    new_row_df['ID'] = event_id
+    new_row_df = new_row_df.fillna(0)
+    new_row_df = new_row_df.astype(df.dtypes)
+    
+    df_before = df.iloc[:insertion_point]
+    df_after = df.iloc[insertion_point:]
+
+    new_df = pd.concat([df_before, new_row_df, df_after], ignore_index=True)
+
+    return new_df, f"Linha inserida com sucesso na posição {insertion_point}"
+
+def create_entire_database() -> pd.DataFrame:
+    pass
+
+def create_table_row_old(df, event_id, row_number_1):
     event_rows = df[df["ID"] == event_id]
     if event_rows.empty:
         return df, f"Erro: Evento com ID {event_id} não encontrado."
@@ -135,7 +168,4 @@ def create_table_row(df, event_id, row_number_1):
     new_df = pd.concat([df_before, new_row_df, df_after], ignore_index=True)
 
     return new_df, f"Linha inserida com sucesso na posição {row_number_1} do evento {event_id}."
-
-def create_entire_database() -> pd.DataFrame:
-    pass
 

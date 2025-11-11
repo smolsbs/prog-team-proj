@@ -18,6 +18,7 @@ MENU ="""[1] Criar a base de dados
 [6] Guardar como JSON
 [7] Guardar como CSV
 [8] Estatísticas
+[9] Criar uma entrada
 
 [Q] Sair
 """
@@ -128,12 +129,11 @@ def main():
                         row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
                         # TODO: balizar a escolha para apenas as linhas do evento em questao
 
-                        db = crud.delete_table_row(db, eid_choice, row_choice)
+                        db, msg = crud.delete_table_row(db, eid_choice, row_choice)
                         new_table = crud.get_table(db, eid_choice)
                         crud.show_table(new_table)
-                        print(f"Linha {row_choice} apagada com sucesso!")
+                        print(msg)
                         input()
-
                 else:
                     retInfo = "Base de dados não encontrada!"
 
@@ -177,7 +177,31 @@ def main():
                     stats.stat_menu(db)
                 else:
                     retInfo = "Base de dados não encontrada!"
+            
+            case "9":
+                if db is not None:
+                    crud.read_ids(db)
+                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
 
+                    if not _event_exists(db, eid_choice):
+                        retInfo = "ID do event não encontrado!"
+
+                    else:
+                        os.system("cls")
+                        table = crud.get_table(db, eid_choice)
+                        _prettify_event(table)
+                        crud.show_table(table)
+
+                        insertion_point = _get_usr_input("Posição da nova linha: ", int)
+                        # TODO: balizar a escolha para apenas as linhas do evento em questao
+
+                        db, msg = crud.create_table_row(db, eid_choice, insertion_point)
+                        new_table = crud.get_table(db, eid_choice)
+                        crud.show_table(new_table)
+                        print(msg)
+                        input()
+                else:
+                    retInfo = "Base de dados não encontrada!"
             case "q":
                 isRunning = False
                 continue
