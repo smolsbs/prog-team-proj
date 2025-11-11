@@ -35,7 +35,7 @@ def guardar_df(df: pd.DataFrame, fname: str) -> bool:
 def guardar_json(df: pd.DataFrame, fname: str) -> bool:
     with open(fname , "w") as fp:
         try:
-            df.to_json(fp)
+            df.to_json(fp, indent=4)
         except:
             return False
     return True
