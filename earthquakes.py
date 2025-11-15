@@ -137,7 +137,7 @@ def main():
                     fname = _get_usr_input("Nome do ficheiro a guardar? ")
                     if fname is None:
                         fname = "valores.json"
-                    guardar_json(db, fname)
+                        utils.save_as_json(db, fname, EVENT_COLS, STATION_COLS)
                 else:
                     retInfo = "Base de dados não encontrada!"
 
