@@ -6,7 +6,6 @@ import json
 from math import modf
 from typing import Any
 
-from numpy import nan
 import pandas as pd
 
 
@@ -26,17 +25,24 @@ def create_dict_struct(df: pd.DataFrame, event_cols, station_cols) -> dict[str, 
     for id in uniqueIds:
         filteredDf = df.loc[df["ID"] == id]
         first_row = filteredDf.head(1)
-        allEvents[int(id)] = create_event_info(first_row)
+        allEvents[int(id)] = create_event_info(first_row, event_cols)
         allEvents[int(id)].update(create_stations_info_1(filteredDf))
 
     return allEvents
 
 
-def create_event_info(info: pd.DataFrame) -> dict[str, Any]:
-    return {"DataHora": info.iloc[0]["Data"], "Lat": float(info.iloc[0]["Lat"]), "Long": float(info.iloc[0]["Long"]),
-                "Profundidade": float(info.iloc[0]["Prof"]), "Tipo Evento": info.iloc[0]["Tipo Ev"],
-                "Magnitude": create_mag_info(info.iloc[0]["Magnitudes"]), "Regiao": info.iloc[0]["Regiao"],
-                "Sentido": info.iloc[0]["Sentido"]}
+def create_event_info(info: pd.DataFrame, cols) -> dict[str, Any]:
+    informacoes = dict()
+
+    for v in cols:
+        if v == "Magnitudes":
+            informacoes[v] = create_mag_info(info.iloc[0][v])
+        elif v in {"Latitude", "Longitude", "Profundidade", "Gap"}:
+            informacoes[v] = float(info.iloc[0][v])
+        else:
+            informacoes[v] = info.iloc[0][v]
+
+    return informacoes
 
 
 def create_stations_info_1(info: pd.DataFrame) -> dict[str, Any]:

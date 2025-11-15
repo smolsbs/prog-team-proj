@@ -1,18 +1,21 @@
 #! /usr/bin/env python
 # pyright: basic
 
+import json
 import os
 import sys
 from datetime import datetime
 
 import pandas as pd
 
-from utils import parser, crud, stats
+from utils import parser, crud, stats, utils
 
 HEADER = """=== Terramotos ==="""
 
+EVENT_COLS = ["Data", "Latitude", "Longitude", "Profundidade", "Tipo Evento", "Gap", "Magnitudes", "Regiao", "Sentido"]
+STATION_COLS = ["Estacao", "Hora", "Min", "Seg", "Componente", "Distancia Epicentro", "Tipo Onda"]
+
 MENU ="""[1] Criar a base de dados
-[] Atualizar uma entrada (Removido)
 [3] Apagar um evento
 [4] Apagar uma entrada de um evento
 [5] Visualizar um evento
@@ -24,20 +27,13 @@ MENU ="""[1] Criar a base de dados
 [Q] Sair
 """
 
-def guardar_df(df: pd.DataFrame, fname: str) -> bool:
-    with open(fname, "w") as fp:
-        fname = f"{fname}.txt"
-        try:
-            fp.write(df.to_string())
-        except ValueError:
-            return False
-    return True
-
 
 def guardar_json(df: pd.DataFrame, fname: str) -> bool:
+    _retValues = utils.create_dict_struct(df, EVENT_COLS, None)
+
     with open(fname , "w") as fp:
         try:
-            df.to_json(fp, indent=4)
+            json.dump(_retValues, fp)
         except:
             return False
     return True
@@ -55,12 +51,6 @@ def guardar_csv(df: pd.DataFrame, fname: str):
 def main():
     isRunning = True
     db = None
-    
-
-    stdin = get_from_stdin()
-    if stdin is not None:
-        db = parser.parse(stdin)
-
     
     retInfo = None
 
@@ -83,26 +73,6 @@ def main():
                     input("Base de dados populada. Enter para voltar ao menu inicial")
                 else:
                     input("Base de dados não encontrada. Por favor tenta de novo.")
-
-            case "2":
-                pass
-#                 if db is not None:
-#                     crud.read_ids(db)
-#                     eid_choice = _get_usr_input("Escolhe o ID: ", int)
-# 
-#                     if not _event_exists(db, eid_choice):
-#                         retInfo = "ID do event não encontrado!"
-# 
-#                     else:
-#                         table = crud.get_table(db, eid_choice)
-#                         crud.show_table(table)
-#                         row_choice = _get_usr_input("Escolhe a linha a atualizar: ", int)
-#                         new_data = {}
-#                         for col in crud.TABLE_READ_RET:
-#                             val = _get_usr_input(f"Novo valor para {col} (Enter para manter o valor atual): ")
-#                             if val is not None:
-#                                 new_data[col] = val
-#                         crud.update_table_row(db, row_choice, new_data)
 
             case "3":
                 if db is not None:
@@ -135,7 +105,6 @@ def main():
                         crud.show_table(table)
 
                         row_choice = _get_usr_input("Escolhe a linha a apagar:", int)
-                        # TODO: balizar a escolha para apenas as linhas do evento em questao
 
                         db, msg = crud.delete_table_row(db, eid_choice, row_choice)
                         new_table = crud.get_table(db, eid_choice)
@@ -221,14 +190,6 @@ def main():
             print(retInfo)
             retInfo = None
             input("Clique Enter para continuar")
-
-
-
-
-def get_from_stdin() -> list[str] | None:
-    if sys.stdin.isatty():
-        return sys.stdin.readlines()
-    return None
 
 
 def _file_exists(name: str) -> bool:

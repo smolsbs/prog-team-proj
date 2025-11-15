@@ -101,8 +101,7 @@ def _parse_preamble(hLines: list[str]):
             case "6":
                 aux[6].append(line)
             case "E":
-                pass
-                # aux["E"].append(line)
+                aux["E"].append(line)
             case "I":
                 aux["I"].append(line)
             case "F":
@@ -136,7 +135,7 @@ def _parse_type_1(data: list[str]):
     depth = float(aux[38:43])
     no_stat = int(aux[48:51])
 
-    hypo = {"Data": dt.isoformat(), "Distancia": dist_ind, "Tipo Ev": ev_type, "Lat": lat, "Long": long, "Prof": depth, "Estacoes": no_stat, "Magnitudes": list()}
+    hypo = {"Data": dt.isoformat(), "Distancia": dist_ind, "Tipo Evento": ev_type, "Latitude": lat, "Longitude": long, "Profundidade": depth, "Estacoes": no_stat, "Magnitudes": list()}
     for l in data:
         hypo["Magnitudes"] = hypo["Magnitudes"] + _parse_mag(l)
 
@@ -175,7 +174,7 @@ def _parse_type_6(data: list[str]):
 def _parse_type_7(data: list[str]):
     aux = io.StringIO("\n".join(data))
     dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8),(10,15), (18,20), (20,22), (23,28), (34,38), (71,75)])
-    dados.rename(columns={'STAT': "Estacao", 'SP': "Componente" , 'PHASW': "Tipo Onda", 'HR': "Hora", 'MM': "Min", 'SECON': "Seg", 'AMPL': "Amplitude", " DIST": "Dist. Epi"}, inplace=True)
+    dados.rename(columns={'STAT': "Estacao", 'SP': "Componente" , 'PHASW': "Tipo Onda", 'HR': "Hora", 'MM': "Min", 'SECON': "Seg", 'AMPL': "Amplitude", " DIST": "Distancia Epicentro"}, inplace=True)
     return dados
 
 
