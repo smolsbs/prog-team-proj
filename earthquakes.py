@@ -56,6 +56,12 @@ def main():
     isRunning = True
     db = None
     
+
+    stdin = get_from_stdin()
+    if stdin is not None:
+        db = parser.parse(stdin)
+
+    
     retInfo = None
 
     while isRunning:
@@ -215,6 +221,14 @@ def main():
             print(retInfo)
             retInfo = None
             input("Clique Enter para continuar")
+
+
+
+
+def get_from_stdin() -> list[str] | None:
+    if sys.stdin.isatty():
+        return sys.stdin.readlines()
+    return None
 
 
 def _file_exists(name: str) -> bool:
