@@ -1,210 +1,56 @@
 # pyright: basic
 
 import datetime
-import os
-import sys
 
 import numpy as np
 import pandas as pd
 import utils
 
-STAT_HEADER = """=== Terramotos ===
- == Estatísticas ==
-"""
 
-STAT_MENU = """[1] Média
-[2] Variância
-[3] Desvio padrão
-[4] Máximo
-[5] Mínimo
-[6] Moda
+def stats(df: pd.DataFrame) -> None:
+    """Estatisticas para a DataFrame
+    :param df: DataFrame em questão"""
 
-[Q] Voltar ao menu principal
-"""
+    mags = mags_avg_std(df)
+    depth = depth_avg_std(df)
 
-FILTER_CHOICES = """[1] Magnitudes
-[2] Distância
-[3] Profundidade
-
-"""
-
-CHOICE = {"1": "Magnitudes", "2": "Distancia", "3": "Prof"}
+    median_mags = median_mags(df)
 
 
-def filter_submenu(type: str):
-    os.system("cls" if sys.platform == "windows" else "clear")
-    print(f"{STAT_HEADER}\n  = {type} =  ")
-    print(FILTER_CHOICES)
-
-    choice = input("Qual dos valores: ")
-
-    try:
-        usrChoice = CHOICE[choice]
-        return usrChoice
-    except KeyError:
-        return None
+def mags_avg_std(data: pd.DataFrame) -> tuple[np.floating, np.floating]:
+    """Media e desvio-padrao das magnitudes
+    :param data: Dataframe com dados a filtrar
+    :returns: Tuple com a media e desvio-padrao
+    """
+    filtered_data: pd.DataFrame = filter_mags(data)
+    vals = filtered_data["MagL"].to_numpy()
+    return (np.average(vals), np.std(vals))
 
 
-def stat_menu(df: pd.DataFrame):
-    inStats = True
-    while inStats:
-        os.system("cls" if sys.platform == "windows" else "clear")
-        print(STAT_HEADER + "\n" + STAT_MENU)
-        usrIn = input("Opção: ").lower()
-
-        match usrIn:
-            case "1":
-                c = filter_submenu("Média")
-
-                if c is not None:
-                    retValue = average(df, c)
-                    if retValue:
-                        print(f"A média de {c} é {retValue}")
-                    else:
-                        print("Um erro aconteceu. Nada a apresentar de momento.")
-                else:
-                    continue
-
-            case "2":
-                c = filter_submenu("Variância")
-
-                if c is not None:
-                    retValue = variance(df, c)
-                    if retValue:
-                        print(f"A variância dos dados de {c} é {retValue}")
-                    else:
-                        print("Um erro aconteceu. Nada a apresentar de momento.")
-                else:
-                    continue
-
-            case "3":
-                c = filter_submenu("Desvio Padrão")
-
-                if c is not None:
-                    retValue = std_dev(df, c)
-                    if retValue:
-                        print(f"O desvio padrão de {c} é {retValue}")
-                    else:
-                        print("Um erro aconteceu. Nada a apresentar de momento.")
-                else:
-                    continue
-
-            case "4":
-                c = filter_submenu("Máximo")
-
-                if c is not None:
-                    retValue = max_v(df, c)
-                    print(f"O valor máximo em {c} é {retValue}")
-                else:
-                    continue
-
-            case "5":
-                c = filter_submenu("Mínimo")
-
-                if c is not None:
-                    retValue = min_v(df, c)
-                    print(f"O valor mínimo em {c} é {retValue}")
-                else:
-                    continue
-
-            case "6":
-                c = filter_submenu("Mínimo")
-
-                if c is not None:
-                    retValue = moda(df, c)
-                    print(f"O valor moda em {c} é {retValue}")
-                else:
-                    continue
-
-            case "q":
-                inStats = False
-                continue
-
-            case _:
-                pass
-        input("Clica `Enter` para continuar")
+def depth_avg_std(data: pd.DataFrame) -> tuple[np.floating, np.floating]:
+    """Media e desvio-padrao das profundidades
+    :param data: Dataframe com dados a filtrar
+    :returns: Tuple com a media e desvio-padrao
+    """
+    filtered_data: pd.DataFrame = filter_depth(data)
+    vals = np.average(filtered_data["Profundidade"].to_numpy())
+    return (np.average(vals), np.std(vals))
 
 
-def average(df: pd.DataFrame, filter_by):
-    events = df.drop_duplicates(subset="ID", keep="first")
-    values = events[filter_by].to_numpy()
+def median_mags(data: pd.DataFrame):
+    filtered_data: pd.DataFrame = filter_mags(data)
+    vals = sorted(filtered_data["MagL"].to_numpy())
 
-    if filter_by == "Magnitudes":
-        values = _unpack_mags(values)
-    try:
-        return np.average(values)
-    except:
-        return None
+    quartil = len(vals) // 4
 
-
-def variance(df, filter_by):
-    events = df.drop_duplicates(subset="ID", keep="first")
-    values = events[filter_by].to_numpy()
-
-    if filter_by == "Magnitudes":
-        values = _unpack_mags(values)
-
-    try:
-        return np.var(values)
-    except:
-        return None
+    return (
+        filtered_data[quartil, :]["MagL"],
+        filtered_data[quartil * 2, :]["MagL"],
+        filtered_data[quartil * 3, :]["MagL"],
+    )
 
 
-def std_dev(df, filter_by):
-    events = df.drop_duplicates(subset="ID", keep="first")
-    values = events[filter_by].to_numpy()
-
-    if filter_by == "Magnitudes":
-        values = _unpack_mags(values)
-
-    try:
-        return np.std(values)
-    except:
-        return None
-
-
-def max_v(df, filter_by):
-    events = df.drop_duplicates(subset="ID", keep="first")
-    values = events[filter_by].to_numpy()
-
-    if filter_by == "Magnitudes":
-        values = _unpack_mags(values)
-
-    return np.max(values)
-
-
-def min_v(df, filter_by):
-    events = df.drop_duplicates(subset="ID", keep="first")
-    values = events[filter_by].to_numpy()
-
-    if filter_by == "Magnitudes":
-        values = _unpack_mags(values)
-
-    return np.min(values)
-
-
-def moda(df, filter_by):
-    events = df.drop_duplicates(subset="ID", keep="first")
-    values = events[filter_by].to_numpy()
-
-    if filter_by == "Magnitudes":
-        values = _unpack_mags(values)
-
-    uniques, count = np.unique(values, return_counts=True)
-    uniques_list = list(zip(uniques, count))
-
-    return sorted(uniques_list, reverse=True, key=lambda x: x[1])[0][0]
-
-
-def _unpack_mags(arr: np.ndarray):
-    newVals = np.empty(0)
-    for v in arr:
-        for m in v:
-            newVals = np.append(newVals, float(m["Magnitude"]))
-    return newVals
-
-
-def filter_mags(data, more_than=None, less_than=None):
+def filter_mags(data, more_than=None, less_than=None) -> pd.DataFrame:
     """Filters by magnitudes a DataFrame into a new Dataframe
 
     :param data: Raw pandas DataFrame

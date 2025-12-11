@@ -1,7 +1,6 @@
 import collections
 import datetime
 
-import numpy as np
 import stats
 from matplotlib import pyplot as plt
 

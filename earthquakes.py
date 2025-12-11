@@ -7,15 +7,32 @@ import sys
 from datetime import datetime
 
 import pandas as pd
-
-from utils import parser, crud, stats, utils
+from utils import crud, parser, stats, utils
 
 HEADER = """=== Terramotos ==="""
 
-EVENT_COLS = ["Data", "Latitude", "Longitude", "Profundidade", "Tipo Evento", "Gap", "Magnitudes", "Regiao", "Sentido"]
-STATION_COLS = ["Estacao", "Hora", "Min", "Seg", "Componente", "Distancia Epicentro", "Tipo Onda"]
+EVENT_COLS = [
+    "Data",
+    "Latitude",
+    "Longitude",
+    "Profundidade",
+    "Tipo Evento",
+    "Gap",
+    "Magnitudes",
+    "Regiao",
+    "Sentido",
+]
+STATION_COLS = [
+    "Estacao",
+    "Hora",
+    "Min",
+    "Seg",
+    "Componente",
+    "Distancia Epicentro",
+    "Tipo Onda",
+]
 
-MENU ="""[1] Criar a base de dados
+MENU = """[1] Criar a base de dados
 [3] Apagar um evento
 [4] Apagar uma entrada de um evento
 [5] Visualizar um evento
@@ -31,7 +48,7 @@ MENU ="""[1] Criar a base de dados
 def guardar_json(df: pd.DataFrame, fname: str) -> bool:
     _retValues = utils.create_dict_struct(df, EVENT_COLS, None)
 
-    with open(fname , "w") as fp:
+    with open(fname, "w") as fp:
         try:
             json.dump(_retValues, fp)
         except:
@@ -51,7 +68,7 @@ def guardar_csv(df: pd.DataFrame, fname: str):
 def main():
     isRunning = True
     db = None
-    
+
     retInfo = None
 
     while isRunning:
@@ -88,7 +105,6 @@ def main():
 
                 else:
                     retInfo = "Base de dados não encontrada!"
-
 
             case "4":
                 if db is not None:
@@ -152,10 +168,10 @@ def main():
 
             case "8":
                 if db is not None:
-                    stats.stat_menu(db)
+                    stats.stats(db)
                 else:
                     retInfo = "Base de dados não encontrada!"
-            
+
             case "9":
                 if db is not None:
                     crud.read_ids(db)
@@ -198,25 +214,30 @@ def _file_exists(name: str) -> bool:
         return True
     return False
 
+
 def _event_exists(df, eid) -> bool:
     allEvents = set(df["ID"])
     return eid in allEvents
 
 
-def _get_usr_input(msg:str, asType=str):
+def _get_usr_input(msg: str, asType=str):
     usrIn = input(msg)
 
     if usrIn == "":
         return None
     return asType(usrIn)
 
+
 def _prettify_event(df):
     preambleInfo = df.drop_duplicates(subset="ID", keep="first")
     stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
     info = df.drop_duplicates(subset="Data", keep="first")
     data = datetime.fromisoformat(info.Data.values[0]).strftime("%c")
-    print(f"Região: {info["Regiao"].values[0]}\nData: {data}\nLatitude: {info.Lat.values[0]}\nLongitude: {info.Long.values[0]}"
-        + f"\nProfundidade: {info.Prof.values[0]}\nTipo de evento: {info['Tipo Ev'].values[0]}\n")
+    print(
+        f"Região: {info['Regiao'].values[0]}\nData: {data}\nLatitude: {info.Lat.values[0]}\nLongitude: {info.Long.values[0]}"
+        + f"\nProfundidade: {info.Prof.values[0]}\nTipo de evento: {info['Tipo Ev'].values[0]}\n"
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
