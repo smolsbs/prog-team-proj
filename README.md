@@ -13,7 +13,26 @@ First, let's represent the data using Python's Pandas module and implement CRUD 
 - T2 - Implement CRUD operations through a text menu;
 - T3 - Implement statistical operations such as: average, variance, standard desviation, max, min, mode; through a text menu;
 - T4 - Convert from Pandas to JSON and save it in a text file;
-- T5 - to be continued ...
+- T5 - Calcular as seguintes estatísticas:
+  - Número de eventos por dia e por mês.
+  - Média e desvio padrão da profundidade e da magnitude por mês.
+  - Mediana, 1º quartil e  3º quartil da profundidade e da magnitude por mês.
+  - Máximo e mínimo a profundidade e da magnitude por mês.
+- T6 - Para a representação gráfica:
+  - Um gráfico de barras com o numero de eventos por dia.
+  - Um gráfico de barras com o numero de eventos por mês.
+  - Um gráfico linear com a média +/- o desvio padrão das profundidades por mês.
+  - Um gráfico linear com a média +/- a desvio padrão da magnitude L por mês.
+  - Um gráfico tipo "boxplot" com as profundidades por mês.
+  - Um gráfico tipo "boxplot" com as magnitudes L por mês.
+- T7 - Implementar os filtros de seleção de eventos para o cálculo / representação gráfica:
+  - Período temporal (Data inicial, Data final).
+  - Eventos com GAP menor que um determinado valor.
+  - Qualidade (EPI ou Todos).
+  - Zonas SZ.
+  - Zonas VZ.
+  - Limitar por Magnitudes L (mínimo, máximo).
+  - Limitar Profundidades  (mínimo, máximo).
 
 ## Prazos
 - T1 a T4 -> 10 de novembro

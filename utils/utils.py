@@ -1,19 +1,29 @@
 #! /usr/bin/env python
 # pyright: basic
 
-from datetime import time
 import json
+from datetime import time
 from math import modf
 from typing import Any
 
+import numpy as np
 import pandas as pd
+
+
+def extract_mag_l(data) -> np.float64:
+    for v in data:
+        if v["Tipo"] == "L":
+            return np.float64(v["Magnitude"])
+
+    return np.float64(0.0)
 
 
 def save_as_json(info: dict[str, Any]) -> bool:
     with open("test.json", "w") as fp:
         json.dump(info, fp)
-    
+
     return True
+
 
 # TODO: passar os nomes das colunas, para não haver problemas no futuro, caso se altere os nomes da dataframe
 def create_dict_struct(df: pd.DataFrame, event_cols, station_cols) -> dict[str, Any]:
@@ -51,14 +61,19 @@ def create_stations_info_1(info: pd.DataFrame) -> dict[str, Any]:
         aux = info.iloc[idx]
 
         micro, sec = tuple(map(int, modf(aux["Seg"])))
-        hms = time(hour=aux["Hora"],minute=aux["Min"], second=sec, microsecond=micro).strftime("%H:%M:%S.%f")
-        station = {"Componente": aux["Componente"], "Hora": hms, "Distancia": float(aux["DIS"])}
+        hms = time(
+            hour=aux["Hora"], minute=aux["Min"], second=sec, microsecond=micro
+        ).strftime("%H:%M:%S.%f")
+        station = {
+            "Componente": aux["Componente"],
+            "Hora": hms,
+            "Distancia": float(aux["DIS"]),
+        }
 
         if type(aux["Tipo Onda"]) != float:
             station.update({"Tipo Onda": aux["Tipo Onda"]})
             if aux["Tipo Onda"] == "IAML":
                 station.update({"Amplitude": float(aux["Amplitude"])})
-
 
         if aux["Estacao"] not in stationsDict.keys():
             stationsDict[aux["Estacao"]] = [station]
@@ -74,7 +89,7 @@ def create_mag_info(magnitudes):
     return mags
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import parser
 
     df = parser.parse("dados.txt")

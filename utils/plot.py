@@ -1,6 +1,8 @@
 import collections
 import datetime
 
+import numpy as np
+import stats
 from matplotlib import pyplot as plt
 
 
@@ -13,7 +15,7 @@ class Plotter:
         pass
 
     def plot_events_day(self):
-        values = collections.Counter(self._preprare_days())
+        values = collections.Counter(stats._preprare_days(self.raw_data))
 
         x = list(values.keys())
         y = list(values.values())
@@ -23,7 +25,7 @@ class Plotter:
         plt.show()
 
     def plot_events_month(self):
-        values = collections.Counter(self._preprare_months())
+        values = collections.Counter(stats._preprare_months(self.raw_data))
 
         x = list(values.keys())
         y = list(values.values())
@@ -32,26 +34,6 @@ class Plotter:
         ax.bar(x, y)
         plt.show()
 
-    def _preprare_days(self):
-        c = self.raw_data.Data.to_list()
-        for idx, d in enumerate(c):
-            aux = datetime.datetime.fromisoformat(d)
-            c[idx] = datetime.datetime.strftime(aux, "%Y-%m-%d")
-
-        return c
-
-    def _preprare_months(self):
-        c = self.raw_data.Data.to_list()
-        for idx, d in enumerate(c):
-            aux = datetime.datetime.fromisoformat(d)
-            c[idx] = datetime.datetime.strftime(aux, "%Y-%m")
-
-        return c
-
-    def _prepare_mags(self):
-        pass
-        # c = self.raw_data.
-
 
 if __name__ == "__main__":
     import parser
@@ -59,4 +41,10 @@ if __name__ == "__main__":
     asdf = parser.parse("../dados.txt")
 
     a = Plotter(asdf)
-    print(a.raw_data.dtypes)
+    # b = stats._filter_mags(a.raw_data, more_than=2.5, less_than=2.9)
+    c = stats.filter_date(
+        a.raw_data,
+        after=datetime.datetime(year=2014, month=1, day=6),
+        before=datetime.datetime(year=2014, month=1, day=12),
+    )
+    print(c)
