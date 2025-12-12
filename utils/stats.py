@@ -25,7 +25,7 @@ FILTER_CHOICES = """[1] Magnitudes
 
 """
 
-CHOICE = {"1": "Magnitudes", "2": "Distancia","3": "Prof"}
+CHOICE = {"1": "Magnitudes", "2": "Distancia","3": "Profundidade"}
 
 
 def filter_submenu(type: str):
