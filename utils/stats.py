@@ -1,176 +1,321 @@
-# pyright: basic
+import os
+import sys
 
-import datetime
-
-import numpy as np
 import pandas as pd
-import utils
+import numpy as np
+
+STAT_HEADER ="""=== Terramotos ===
+ == Estatísticas == 
+"""
+
+STAT_MENU = """[1] Média
+[2] Variância
+[3] Desvio padrão
+[4] Máximo
+[5] Mínimo
+[6] Moda
+[T] Estatísticas Temporais (T5)
+
+[Q] Voltar ao menu principal
+"""
+
+FILTER_CHOICES = """[1] Magnitudes
+[2] Distância
+[3] Profundidade
+
+"""
+
+CHOICE = {"1": "Magnitudes", "2": "Distancia","3": "Profundidade"}
 
 
-def stats(df: pd.DataFrame) -> None:
-    """Estatisticas para a DataFrame
-    :param df: DataFrame em questão"""
+def filter_submenu(type: str):
+    os.system("cls" if sys.platform == "windows" else "clear")
+    print(f"{STAT_HEADER}\n  = {type} =  ")
+    print(FILTER_CHOICES)
 
-    mags = mags_avg_std(df)
-    depth = depth_avg_std(df)
+    choice = input("Qual dos valores: ")
 
-    median_mags = median_mags(df)
-
-
-def mags_avg_std(data: pd.DataFrame) -> tuple[np.floating, np.floating]:
-    """Media e desvio-padrao das magnitudes
-    :param data: Dataframe com dados a filtrar
-    :returns: Tuple com a media e desvio-padrao
-    """
-    filtered_data: pd.DataFrame = filter_mags(data)
-    vals = filtered_data["MagL"].to_numpy()
-    return (np.average(vals), np.std(vals))
+    try:
+        usrChoice = CHOICE[choice]
+        return usrChoice
+    except KeyError:
+        return None
 
 
-def depth_avg_std(data: pd.DataFrame) -> tuple[np.floating, np.floating]:
-    """Media e desvio-padrao das profundidades
-    :param data: Dataframe com dados a filtrar
-    :returns: Tuple com a media e desvio-padrao
-    """
-    filtered_data: pd.DataFrame = filter_depth(data)
-    vals = np.average(filtered_data["Profundidade"].to_numpy())
-    return (np.average(vals), np.std(vals))
+
+# -- t5 funcs
+
+def _get_unique_events(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop_duplicates(subset="ID", keep='first')
+
+def convert_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
+    # Converte coluna Data para objetos datetime
+    df = df.copy()
+    df['Data'] = pd.to_datetime(df['Data'], format='mixed')
+    return df
+
+def events_per_period(df: pd.DataFrame, period: str):
+    # Calcula o número de eventos por dia ('D') ou mês ('M')
+    df = convert_to_datetime(df)
+    events = _get_unique_events(df)
+
+    if period == 'M':
+        period = 'ME'
+        
+    res = events.set_index('Data').resample(period).size()
+    return res.index, res.values
+
+def stats_depth_month(df: pd.DataFrame):
+     # Calcula estatísticas de Profundidade por Mês
+     df = convert_to_datetime(df)
+     events = _get_unique_events(df)
+     
+     grouped = events.set_index('Data').resample('ME')['Profundidade']
+     
+     stats_df = pd.DataFrame({
+         'Mean': grouped.mean(),
+         'Std': grouped.std(),
+         'Median': grouped.median(),
+         'Q1': grouped.quantile(0.25),
+         'Q3': grouped.quantile(0.75),
+         'Min': grouped.min(),
+         'Max': grouped.max()
+     })
+     return stats_df
+
+def stats_mag_month(df: pd.DataFrame):
+    # Calcula estatísticas de Magnitude por Mês
+    df = convert_to_datetime(df)
+    events = _get_unique_events(df)
+    
+    def get_max_mag(mags):
+        vals = [float(m['Magnitude']) for m in mags if 'Magnitude' in m]
+        return max(vals) if vals else np.nan
+
+    events = events.copy()
+    events['MaxMag'] = events['Magnitudes'].apply(get_max_mag)
+    
+    grouped = events.set_index('Data').resample('ME')['MaxMag']
+    
+    stats_df = pd.DataFrame({
+         'Mean': grouped.mean(),
+         'Std': grouped.std(),
+         'Median': grouped.median(),
+         'Q1': grouped.quantile(0.25),
+         'Q3': grouped.quantile(0.75),
+         'Min': grouped.min(),
+         'Max': grouped.max()
+     })
+    return stats_df
 
 
-def median_mags(data: pd.DataFrame):
-    filtered_data: pd.DataFrame = filter_mags(data)
-    vals = sorted(filtered_data["MagL"].to_numpy())
+# -- t5 menu
 
-    quartil = len(vals) // 4
+T5_MENU = """[1] Número de eventos por dia
+[2] Número de eventos por mês
+[3] Estatísticas Profundidade por mês
+[4] Estatísticas Magnitude por mês
 
-    return (
-        filtered_data[quartil, :]["MagL"],
-        filtered_data[quartil * 2, :]["MagL"],
-        filtered_data[quartil * 3, :]["MagL"],
-    )
+[Q] Voltar
+"""
 
+def t5_menu(df: pd.DataFrame):
+    while True:
+        os.system("cls" if sys.platform == "windows" else "clear")
+        print(STAT_HEADER + "\n" + " == T5: Estatísticas Temporais ==\n" + T5_MENU)
+        usrIn = input("Opção: ").lower()
+        
+        match usrIn:
+            case "1":
+                dates, counts = events_per_period(df, 'D')
+                print("\nEventos por Dia:")
+                print(pd.DataFrame({'Data': dates, 'Contagem': counts}).to_string(index=False))
+            
+            case "2":
+                dates, counts = events_per_period(df, 'M')
+                print("\nEventos por Mês:")
+                print(pd.DataFrame({'Data': dates, 'Contagem': counts}).to_string(index=False))
 
-def filter_mags(data, more_than=None, less_than=None) -> pd.DataFrame:
-    """Filters by magnitudes a DataFrame into a new Dataframe
+            case "3":
+                st = stats_depth_month(df)
+                print("\nEstatísticas Profundidade por Mês:")
+                print(st.to_string())
 
-    :param data: Raw pandas DataFrame
-    :param more_than(optional): Filter for magnitudes above threshold
-    :param after(optional): Filters for dates after set date
-    :returns: Returns a filtered pandas DataFrame
-    """
-    v = data.drop_duplicates(subset="ID", keep="first")
-    _dict = {"Data": [], "MagL": []}
-    for idx, c in v.iterrows():
-        _dict["Data"].append(str(c.Data))
-        _dict["MagL"].append(utils.extract_mag_l(c.Magnitudes))
-
-    _df = pd.DataFrame.from_dict(_dict)
-    if more_than:
-        _df = _df[_df["MagL"] >= more_than]
-
-    if less_than:
-        _df = _df[_df["MagL"] <= less_than]
-    return _df
-
-
-def filter_date(
-    data: pd.DataFrame,
-    before: datetime.datetime | None = None,
-    after: datetime.datetime | None = None,
-) -> pd.DataFrame:
-    """Filters by date a DataFrame into a new Dataframe
-
-    :param data: Raw pandas DataFrame
-    :param before(optional): Filter for dates before set date
-    :param after(optional): Filters for dates after set date
-    :returns: Returns a filtered pandas DataFrame
-    """
-    v = data
-    for idx, c in v.iterrows():
-        v.at[idx, "Data"] = datetime.datetime.fromisoformat(c.Data)
-
-    if after:
-        v = v[v["Data"] >= after]
-
-    if before:
-        v = v[v["Data"] >= before]
-    return v
+            case "4":
+                st = stats_mag_month(df)
+                print("\nEstatísticas Magnitude por Mês:")
+                print(st.to_string())
+                
+            case "q":
+                return
+            case _:
+                pass
+        
+        input("\n[Enter] para continuar...")
 
 
-def filter_depth(
-    data: pd.DataFrame,
-    less_than: float | None = None,
-    more_than: float | None = None,
-) -> pd.DataFrame:
-    """Filters by the depth a DataFrame into a new Dataframe
+# -- stat menu
 
-    :param data: Raw pandas DataFrame
-    :param less_than(optional): Filter for depths below the threshold
-    :param after(optional): Filters for depths deeper than threshold
-    :returns: Returns a filtered pandas DataFrame
-    """
-    v = data.drop_duplicates(subset="ID", keep="first")
+def stat_menu(df: pd.DataFrame):
+    inStats = True
+    while inStats:
+        os.system("cls" if sys.platform == "windows" else "clear")
+        print(STAT_HEADER + "\n" + STAT_MENU)
+        usrIn = input("Opção: ").lower()
 
-    if more_than:
-        v = v[v["Profundidade"] >= more_than]
+        match usrIn:
+            case "t":
+                t5_menu(df)
+                continue
 
-    if less_than:
-        v = v[v["Profundidade"] >= less_than]
-    return v
+            case "1":
+                c = filter_submenu("Média")
+
+                if c is not None:
+                    retValue = average(df, c)
+                    if retValue:
+                        print(f"A média de {c} é {retValue}")
+                    else:
+                        print("Um erro aconteceu. Nada a apresentar de momento.")
+                else:
+                    continue
+
+            case "2":
+                c = filter_submenu("Variância")
+
+                if c is not None:
+                    retValue = variance(df, c)
+                    if retValue:
+                        print(f"A variância dos dados de {c} é {retValue}")
+                    else:
+                        print("Um erro aconteceu. Nada a apresentar de momento.")
+                else:
+                    continue
+
+            case "3":
+                c = filter_submenu("Desvio Padrão")
+
+                if c is not None:
+                    retValue = std_dev(df, c)
+                    if retValue:
+                        print(f"O desvio padrão de {c} é {retValue}")
+                    else:
+                        print("Um erro aconteceu. Nada a apresentar de momento.")
+                else:
+                    continue
+
+            case "4":
+                c = filter_submenu("Máximo")
+
+                if c is not None:
+                    retValue = max_v(df, c)
+                    print(f"O valor máximo em {c} é {retValue}")
+                else:
+                    continue
+
+            case "5":
+                c = filter_submenu("Mínimo")
+
+                if c is not None:
+                    retValue = min_v(df, c)
+                    print(f"O valor mínimo em {c} é {retValue}")
+                else:
+                    continue
+
+            case "6":
+                c = filter_submenu("Moda")
+
+                if c is not None:
+                    retValue = moda(df, c)
+                    print(f"O valor moda em {c} é {retValue}")
+                else:
+                    continue
+
+            case "q":
+                inStats = False
+                continue
+
+            case _:
+                pass
+        
+        input("Clica `Enter` para continuar")
 
 
-def filter_gap(
-    data: pd.DataFrame,
-    threshold: int,
-) -> pd.DataFrame:
-    """Filters by the depth a DataFrame into a new Dataframe
+def average(df: pd.DataFrame, filter_by):
+    events = _get_unique_events(df)
+    values = events[filter_by].to_numpy()
 
-    :param data: Raw pandas DataFrame
-    :param threshold: Filter for GAPS below the threshold
-    :returns: Returns a filtered pandas DataFrame
-    """
-    v = data.drop_duplicates(subset="ID", keep="first")
-    v = v[v["Gap"] <= threshold]
-    return v
+    if filter_by == "Magnitudes":
+        values = _unpack_mags(values)
+    try:
+        return np.average(values)
+    except:
+        return None
 
 
-def filter_sz(
-    data: pd.DataFrame,
-) -> pd.DataFrame:
-    """Filters by SZ plane a DataFrame into a new Dataframe
+def variance(df, filter_by):
+    events = _get_unique_events(df)
+    values = events[filter_by].to_numpy()
 
-    :param data: Raw pandas DataFrame
-    :returns: Returns a filtered pandas DataFrame
-    """
-    v = data[data["SZ"].notna()]
-    return v
+    if filter_by == "Magnitudes":
+        values = _unpack_mags(values)
 
-
-def filter_vz(
-    data: pd.DataFrame,
-) -> pd.DataFrame:
-    """Filters by VZ plane a DataFrame into a new Dataframe
-
-    :param data: Raw pandas DataFrame
-    :returns: Returns a filtered pandas DataFrame
-    """
-    v = data[data["VZ"].notna()]
-    return v
+    try:
+        return np.var(values)
+    except:
+        return None
 
 
-def _preprare_days(data):
-    c = data.Data.to_list()
-    for idx, d in enumerate(c):
-        aux = datetime.datetime.fromisoformat(d)
-        c[idx] = datetime.datetime.strftime(aux, "%Y-%m-%d")
+def std_dev(df, filter_by):
+    events = _get_unique_events(df)
+    values = events[filter_by].to_numpy()
 
-    return c
+    if filter_by == "Magnitudes":
+        values = _unpack_mags(values)
+    
+    try:
+        return np.std(values)
+    except:
+        return None
 
 
-def _preprare_months(data):
-    c = data.Data.to_list()
-    for idx, d in enumerate(c):
-        aux = datetime.datetime.fromisoformat(d)
-        c[idx] = datetime.datetime.strftime(aux, "%Y-%m")
+def max_v(df, filter_by):
+    events = _get_unique_events(df)
+    values = events[filter_by].to_numpy()
 
-    return c
+    if filter_by == "Magnitudes":
+        values = _unpack_mags(values)
+    
+    return np.max(values)
+
+
+def min_v(df, filter_by):
+    events = _get_unique_events(df)
+    values = events[filter_by].to_numpy()
+
+    if filter_by == "Magnitudes":
+        values = _unpack_mags(values)
+    
+    return np.min(values)
+
+
+def moda(df, filter_by):
+    events = _get_unique_events(df)
+    values = events[filter_by].to_numpy()
+
+    if filter_by == "Magnitudes":
+        values = _unpack_mags(values)
+
+    uniques, count = np.unique(values, return_counts=True)
+    uniques_list = list(zip(uniques, count))
+
+    return sorted(uniques_list, reverse=True ,key=lambda x: x[1])[0][0]
+
+
+def _unpack_mags(arr: np.ndarray):
+    newVals = np.empty(0)
+    for v in arr:
+        for m in v:
+            newVals = np.append(newVals, float(m["Magnitude"]))
+    return newVals
+
