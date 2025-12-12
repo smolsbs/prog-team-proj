@@ -1,4 +1,3 @@
-# pyright: basic
 import io
 
 from collections import defaultdict
@@ -6,12 +5,12 @@ from datetime import datetime
 
 import pandas as pd
 
-# --- globals ---
+# --- variáveis globais ---
 DIST_IND = {"L": "Local", "R": "Regional", "D": "Distante"}
 TYPE = {"Q": "Quake", "V": "Volcanic", "U": "Unknown", "E": "Explosion"}
 
 
-# --- helper funcs --- 
+# --- funções auxiliares --- 
 def is_blank(l: str) -> bool:
     return len(l.strip(" ")) == 0
 
@@ -156,10 +155,22 @@ def _parse_mag(line: str):
 def _parse_type_3(data: list[str]):
     comments = {}
     for line in data:
-        if line.startswith(" SENTIDO") or line.startswith(" REGIAO"):
+        if line.startswith(" SENTIDO") or line.startswith(" REGIAO") or line.startswith(" PUB"):
             c, v = line[:-2].strip().split(": ", maxsplit=1)
-            v = v.split(",")[0]
-            comments[c.capitalize()] = v
+            
+            if c == "REGIAO":
+                parts = v.split(",")
+                comments["Regiao"] = parts[0].strip()
+                for p in parts[1:]:
+                    p = p.strip()
+                    if "SZ" in p:
+                        comments["SZ"] = p
+                    elif "VZ" in p:
+                        comments["VZ"] = p
+            elif c == "PUB":
+                comments["Pub"] = v.strip()
+            else:
+                comments[c.capitalize()] = v.split(",")[0]
 
     return comments
 
