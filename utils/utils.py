@@ -9,9 +9,10 @@ from typing import Any
 import pandas as pd
 
 
-def save_as_json(info: dict[str, Any]) -> bool:
-    with open("test.json", "w") as fp:
-        json.dump(info, fp)
+def save_as_json(df: pd.DataFrame, fname, event_cols, station_cols) -> bool:
+    info = create_dict_struct(df, event_cols, station_cols)
+    with open(fname, "w") as fp:
+        json.dump(info, fp, indent=4)
     
     return True
 

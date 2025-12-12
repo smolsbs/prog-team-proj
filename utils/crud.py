@@ -8,7 +8,7 @@ pd.set_option('display.width', 150)
 
 # -- globals
 
-HEADER_COLS = ["Data", "Distancia", "Tipo Ev", "Lat", "Long", "Prof", "Magnitudes"]
+HEADER_COLS = ["Data", "Distancia", "Tipo Evento", "Latitude", "Longitude", "Profundidade", "Magnitudes"]
 TABLE_READ_RET = ["Estacao", "Hora", "Min", "Seg", "Componente", "Amplitude"]
 
 # -- helper funcs
@@ -33,14 +33,13 @@ def get_unique_events_table(df):
 
 
 def read_header(df, event_id):
-    # Informações do header do evento
+    # Obtém a informação da primeira linha do evento (cabeçalho)
     row = df[df["ID"] == event_id].iloc[0]
     cols = list(df.columns)
-    # end = cols.index("ID") - 1
-    # header_cols = cols[:end]
-    # Para selecionar todas as colunas em vez de só algumas
+
     info = []
     for (i, col) in enumerate(HEADER_COLS):
+        # Constrói a string formatada "Índice Nome: Valor"
         info.append(f"{i+1} {col}: {row[col]}")
     infoString = f"Header do evento {event_id}:\n" + "\n".join(info) 
     return infoString
@@ -56,15 +55,23 @@ def get_table(df, event_id):
 
 
 def read_table_row(df, event_id, row_number_1):
-    # retorna uma linha específica da tabela
+    # Retorna uma linha específica da tabela de estações
+    # row_number_1 é o índice dado pelo utilizador (começa em 1)
+    # row_number_0 é o índice real da lista (começa em 0)
     row_number_0 = row_number_1 - 1
     table = get_table(df, event_id)
+    
+    # Verifica se a linha pedida existe dentro das linhas deste evento
     if row_number_0 < 0 or row_number_0 >= len(table):
         return f"Linha {row_number_1} não pertence ao evento {event_id}."
+        
     row = table.iloc[row_number_0]
     cols = list(df.columns)
+    
+    # Encontra onde começam as colunas da estação para mostrar apenas os dados relevantes
     start = cols.index("Estacao")
     tableCols = cols[start:]
+    
     info = []
     for (i, col) in enumerate(tableCols):
         info.append(f"{i+1} {col}: {row[col]}")
@@ -79,9 +86,10 @@ def update_table_row(df, row_line, new_data):
 
 
 def update_header(df, event_id, new_data):
-    # atualiza o header de um evento
+    # Atualiza o cabeçalho de um evento com os novos dados
     for key, value in new_data.items():
         if key in df.columns:
+            # Atualiza todas as linhas deste evento (ID == event_id) com o novo valor
             df.loc[(df["ID"] == event_id) | df.iloc[0], key] = value
     return f"Header do evento {event_id} atualizado com sucesso."
 
@@ -94,48 +102,60 @@ def delete_event(df, event_id):
 
 
 def delete_table_row(df, event_id, row_number):
-    # Apaga uma linha específica da tabela do evento
-    # Cria uma nova linha vazia no dataframe na posição insertion_point
+    # Apaga uma linha específica da tabela de estações de um evento
+    
+    # Encontra todos os índices (números de linha no DataFrame que pertencem a este evento
     matching_indices = df.index[df['ID'] == event_id].tolist()
 
     first_event_row = matching_indices[0]
     last_event_row = matching_indices[-1]
 
+    # Garante que não estamos a apagar uma linha que pertence a outro evento
     if row_number < first_event_row or row_number > last_event_row:
         return df, f"Erro: A posição a apagar, {row_number} está fora do intervalo permitido para o evento {event_id}."
+    
     new_df = df.drop([row_number]).reset_index(drop=True)
-    return new_df, f"Linha {row_choice} apagada com sucesso!"
+    return new_df, f"Linha {row_number} apagada com sucesso!"
 
 
 def create_blank_event(df, event_id):
-    # Criar um evento vazio com linha de header e 1 linha de coluna
+    # Cria um novo evento vazio
+    # Primeiro, avança os IDs de todos os eventos seguintes para arranjar espaço
     df.loc[df["ID"] >= event_id, "ID"] += 1
 
+    # Cria 2 linhas novas: uma para o cabeçalho e outra vazia para dados
     blank_row_df = pd.DataFrame(columns=df.columns, index=[0, 1])
     blank_row_df["ID"] = event_id
     blank_row_df = blank_row_df.astype(df.dtypes)
 
+    # Junta as novas linhas ao dataframe principal
     new_df = pd.concat([df, blank_row_df], ignore_index=True)
+    # Ordena por ID para garantir que fica tudo na ordem certa (mergesort é estável)
     new_df = new_df.sort_values(by="ID", kind="mergesort").reset_index(drop=True)
 
     return new_df
 
 
 def create_table_row(df, event_id, insertion_point):
-    # Cria uma nova linha vazia no dataframe na posição insertion_point
+    # Insere uma nova linha vazia numa posição específica dentro do evento
+    
+    # Encontra os limites (início e fim) do evento atual
     matching_indices = df.index[df['ID'] == event_id].tolist()
 
     first_event_row = matching_indices[0]
     last_event_row = matching_indices[-1]
 
+    # Valida se o ponto de inserção é válido para este evento
     if insertion_point < first_event_row or insertion_point > last_event_row + 1:
         return df, f"Erro: A posição de inserção {insertion_point} está fora do intervalo permitido para o evento {event_id}"
 
+    # Cria a nova linha
     new_row_df = pd.DataFrame(columns=df.columns, index=[0])
     new_row_df['ID'] = event_id
     new_row_df = new_row_df.fillna(0)
     new_row_df = new_row_df.astype(df.dtypes)
     
+    # Parte o dataframe em dois (antes e depois do ponto de inserção) e mete a nova linha no meio
     df_before = df.iloc[:insertion_point]
     df_after = df.iloc[insertion_point:]
 

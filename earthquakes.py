@@ -8,11 +8,11 @@ from datetime import datetime
 
 import pandas as pd
 
-from utils import parser, crud, stats, utils
+from utils import parser, crud, stats, utils, visuals, filters
 
 HEADER = """=== Terramotos ==="""
 
-EVENT_COLS = ["Data", "Latitude", "Longitude", "Profundidade", "Tipo Evento", "Gap", "Magnitudes", "Regiao", "Sentido"]
+EVENT_COLS = ["Data", "Latitude", "Longitude", "Profundidade", "Tipo Evento", "Gap", "Magnitudes", "Regiao", "Sentido", "Pub", "SZ", "VZ"]
 STATION_COLS = ["Estacao", "Hora", "Min", "Seg", "Componente", "Distancia Epicentro", "Tipo Onda"]
 
 MENU ="""[1] Criar a base de dados
@@ -23,6 +23,8 @@ MENU ="""[1] Criar a base de dados
 [7] Guardar como CSV
 [8] Estatísticas
 [9] Criar uma entrada
+[10] Gráficos
+[11] Filtros (T7)
 
 [Q] Sair
 """
@@ -51,6 +53,7 @@ def guardar_csv(df: pd.DataFrame, fname: str):
 def main():
     isRunning = True
     db = None
+    original_db = None
     
     retInfo = None
 
@@ -67,9 +70,11 @@ def main():
 
                 if _file_exists(fname) and fname.endswith(".json"):
                     db = pd.read_json(fname)
+                    original_db = db.copy()
                     print("Base de dados populada.")
                 elif _file_exists(fname):
                     db = parser.parse(fname)
+                    original_db = db.copy()
                     input("Base de dados populada. Enter para voltar ao menu inicial")
                 else:
                     input("Base de dados não encontrada. Por favor tenta de novo.")
@@ -137,7 +142,7 @@ def main():
                     fname = _get_usr_input("Nome do ficheiro a guardar? ")
                     if fname is None:
                         fname = "valores.json"
-                    guardar_json(db, fname)
+                        utils.save_as_json(db, fname, EVENT_COLS, STATION_COLS)
                 else:
                     retInfo = "Base de dados não encontrada!"
 
@@ -180,6 +185,21 @@ def main():
                         input()
                 else:
                     retInfo = "Base de dados não encontrada!"
+            
+            case "10":
+                if db is not None:
+                    visuals.visual_menu(db)
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
+            case "11":
+                if db is not None:
+                    # Passa db e original_db para o menu de filtros
+                    # Retorna a nova db ativa (filtrada ou redefinida)
+                    db = filters.filter_menu(db, original_db)
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
             case "q":
                 isRunning = False
                 continue
@@ -215,8 +235,8 @@ def _prettify_event(df):
     stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
     info = df.drop_duplicates(subset="Data", keep="first")
     data = datetime.fromisoformat(info.Data.values[0]).strftime("%c")
-    print(f"Região: {info["Regiao"].values[0]}\nData: {data}\nLatitude: {info.Lat.values[0]}\nLongitude: {info.Long.values[0]}"
-        + f"\nProfundidade: {info.Prof.values[0]}\nTipo de evento: {info['Tipo Ev'].values[0]}\n")
+    print(f"Região: {info["Regiao"].values[0]}\nData: {data}\nLatitude: {info['Latitude'].values[0]}\nLongitude: {info['Longitude'].values[0]}"
+        + f"\nProfundidade: {info['Profundidade'].values[0]}\nTipo de evento: {info['Tipo Evento'].values[0]}\n")
 
 if __name__ == '__main__':
     main()
