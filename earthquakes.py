@@ -5,43 +5,63 @@ import json
 import os
 import sys
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 
-from utils import parser, crud, stats, utils, visuals, filters
+from utils import crud, filters, parser, stats, utils, visuals
 
 HEADER = """=== Terramotos ==="""
 
-EVENT_COLS = ["Data", "Latitude", "Longitude", "Profundidade", "Tipo Evento", "Gap", "Magnitudes", "Regiao", "Sentido", "Pub", "SZ", "VZ"]
-STATION_COLS = ["Estacao", "Hora", "Min", "Seg", "Componente", "Distancia Epicentro", "Tipo Onda"]
+EVENT_COLS = [
+    "Data",
+    "Latitude",
+    "Longitude",
+    "Profundidade",
+    "Tipo Evento",
+    "Gap",
+    "Magnitudes",
+    "Regiao",
+    "Sentido",
+    "Pub",
+    "SZ",
+    "VZ",
+]
+STATION_COLS = [
+    "Estacao",
+    "Hora",
+    "Min",
+    "Seg",
+    "Componente",
+    "Distancia Epicentro",
+    "Tipo Onda",
+]
 
-MENU ="""[1] Criar a base de dados
-[3] Apagar um evento
-[4] Apagar uma entrada de um evento
-[5] Visualizar um evento
-[6] Guardar como JSON
-[7] Guardar como CSV
-[8] Estatísticas
-[9] Criar uma entrada
-[10] Gráficos
-[11] Filtros (T7)
+MENU = """[1] Criar a base de dados
+[2] Apagar um evento
+[3] Apagar uma entrada de um evento
+[4] Visualizar um evento
+[5] Guardar como JSON
+[6] Guardar como CSV
+[7] Estatísticas
+[8] Criar uma entrada
+[9] Gráficos
+[10] Filtros (T7)
 
 [Q] Sair
 """
 
 
-def guardar_json(df: pd.DataFrame, fname: str) -> bool:
-    _retValues = utils.create_dict_struct(df, EVENT_COLS, None)
-
-    with open(fname , "w") as fp:
-        try:
-            json.dump(_retValues, fp)
-        except:
-            return False
-    return True
-
-
 def guardar_csv(df: pd.DataFrame, fname: str):
+    """Guarda uma DataFrame num ficheiro csv
+
+    Args:
+        df (pd.DataFrame): Dataframe com os dados
+        fname (str): nome do ficheiro csv
+
+    Returns:
+        bool: Retorna se a operação foi bem sucedida ou não
+    """
     with open(fname, "w") as fp:
         try:
             df.to_csv(fp, index=False)
@@ -51,10 +71,16 @@ def guardar_csv(df: pd.DataFrame, fname: str):
 
 
 def main():
+    """Ponto de entrada do programa.
+
+    Constituido por um while loop a correr um menu onde o utilizador pode
+    interagir com os vários módulos implementados.
+
+    """
     isRunning = True
     db = None
     original_db = None
-    
+
     retInfo = None
 
     while isRunning:
@@ -79,10 +105,10 @@ def main():
                 else:
                     input("Base de dados não encontrada. Por favor tenta de novo.")
 
-            case "3":
+            case "2":
                 if db is not None:
                     crud.read_ids(db)
-                    choice = _get_usr_input("Escolhe o ID para apagar: ", int)
+                    choice: int = _get_usr_input("Escolhe o ID para apagar: ", int)
 
                     if not _event_exists(db, choice):
                         retInfo = "ID do event não encontrado!"
@@ -94,11 +120,10 @@ def main():
                 else:
                     retInfo = "Base de dados não encontrada!"
 
-
-            case "4":
+            case "3":
                 if db is not None:
                     crud.read_ids(db)
-                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
+                    eid_choice: int = _get_usr_input("Escolhe o ID: ", int)
 
                     if not _event_exists(db, eid_choice):
                         retInfo = "ID do event não encontrado!"
@@ -119,7 +144,7 @@ def main():
                 else:
                     retInfo = "Base de dados não encontrada!"
 
-            case "5":
+            case "4":
                 if db is not None:
                     crud.read_ids(db)
                     choice = _get_usr_input("Escolhe o ID para ver os dados: ", int)
@@ -137,16 +162,16 @@ def main():
                 else:
                     retInfo = "Base de dados não encontrada!"
 
-            case "6":
+            case "5":
                 if db is not None:
                     fname = _get_usr_input("Nome do ficheiro a guardar? ")
                     if fname is None:
                         fname = "valores.json"
-                        utils.save_as_json(db, fname, EVENT_COLS, STATION_COLS)
+                        utils.save_as_json(db, fname, EVENT_COLS)
                 else:
                     retInfo = "Base de dados não encontrada!"
 
-            case "7":
+            case "6":
                 if db is not None:
                     fname = _get_usr_input("Nome do ficheiro a guardar? ")
                     if fname is None:
@@ -155,13 +180,13 @@ def main():
                 else:
                     retInfo = "Base de dados não encontrada!"
 
-            case "8":
+            case "7":
                 if db is not None:
                     stats.stat_menu(db)
                 else:
                     retInfo = "Base de dados não encontrada!"
-            
-            case "9":
+
+            case "8":
                 if db is not None:
                     crud.read_ids(db)
                     eid_choice = _get_usr_input("Escolhe o ID: ", int)
@@ -176,7 +201,6 @@ def main():
                         crud.show_table(table)
 
                         insertion_point = _get_usr_input("Posição da nova linha: ", int)
-                        # TODO: balizar a escolha para apenas as linhas do evento em questao
 
                         db, msg = crud.create_table_row(db, eid_choice, insertion_point)
                         new_table = crud.get_table(db, eid_choice)
@@ -185,14 +209,14 @@ def main():
                         input()
                 else:
                     retInfo = "Base de dados não encontrada!"
-            
-            case "10":
+
+            case "9":
                 if db is not None:
                     visuals.visual_menu(db)
                 else:
                     retInfo = "Base de dados não encontrada!"
 
-            case "11":
+            case "10":
                 if db is not None:
                     # Passa db e original_db para o menu de filtros
                     # Retorna a nova db ativa (filtrada ou redefinida)
@@ -213,30 +237,71 @@ def main():
 
 
 def _file_exists(name: str) -> bool:
+    """Verifica se um ficheiro existe no diretório onde o programa correntemente
+    corre, através de os.getcwd()
+
+    Args:
+        name (str): Nome do ficheiro a verificar
+
+    Returns:
+        bool: True se existe, False caso contrário
+    """
     currFiles = os.listdir(os.getcwd())
     if name in currFiles:
         return True
     return False
 
-def _event_exists(df, eid) -> bool:
+
+def _event_exists(df: pd.DataFrame, eid: int) -> bool:
+    """Função privada de verificação de eventos
+
+    Verifica se um certo ID de evento existe ou não dentro de uma DataFrame
+
+    Args:
+        df (pd.DataFrame): DataFrame a pesquisar
+        eid (int): Evento específico a pesquisar
+
+    Returns:
+        bool: True se evento existe dentro da DataFrame, False caso contrário
+    """
     allEvents = set(df["ID"])
     return eid in allEvents
 
 
-def _get_usr_input(msg:str, asType=str):
+def _get_usr_input(msg: str, asType: Any = str) -> Any:
+    """Modifica o stdin do utilizador para o tipo especificado. Por defeito retorna uma str.
+
+    Args:
+        msg (str): String a ser alterada
+        asType (Any): tipo no qual msg deverá ser intepretado como (default: `str`)
+
+    Returns:
+        [type]: [description]
+    """
     usrIn = input(msg)
 
     if usrIn == "":
         return None
     return asType(usrIn)
 
-def _prettify_event(df):
-    preambleInfo = df.drop_duplicates(subset="ID", keep="first")
-    stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
+
+def _prettify_event(df: pd.DataFrame) -> None:
+    """Função privada para utilização na visualização de um evento singular através
+    do menu de `Visualizar um evento`
+
+    Args:
+        df (pd.DataFrame): DataFrame com os dados do evento
+    """
+    # preambleInfo = df.drop_duplicates(subset="ID", keep="first")
+    # stations = df[["Estacao", "Componente", "Tipo Onda", "Amplitude"]]
     info = df.drop_duplicates(subset="Data", keep="first")
     data = datetime.fromisoformat(info.Data.values[0]).strftime("%c")
-    print(f"Região: {info["Regiao"].values[0]}\nData: {data}\nLatitude: {info['Latitude'].values[0]}\nLongitude: {info['Longitude'].values[0]}"
-        + f"\nProfundidade: {info['Profundidade'].values[0]}\nTipo de evento: {info['Tipo Evento'].values[0]}\n")
+    print(
+        f"Região: {info['Regiao'].values[0]}\nData: {data}\nLatitude: {info['Latitude'].values[0]}\nLongitude: {info['Longitude'].values[0]}"
+        + f"\nProfundidade: {info['Profundidade'].values[0]}\nTipo de evento: {info['Tipo Evento'].values[0]}\n"
+    )
 
-if __name__ == '__main__':
+
+# entry point
+if __name__ == "__main__":
     main()

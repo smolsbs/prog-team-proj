@@ -2,6 +2,7 @@
 
 ## Como utilizar
 Correr o ficheiro `earthquakes.py` usando `python earthquakes.py`
+Garantir que o ficheiro de dados está no mesmo diretório que o ficheiro `earthquakes.py`
 
 ## Objectivos
 
@@ -36,7 +37,7 @@ First, let's represent the data using Python's Pandas module and implement CRUD 
 
 ## Prazos
 - T1 a T4 -> 10 de novembro
-- (a definir)
+- T5 a T7 -> 14 de dezembro
 
 ## Apontamentos
 Dados parecem estar no formato [Nordic](https://seisan.info/v13/node259.html)

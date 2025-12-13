@@ -1,14 +1,25 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-import sys
 import os
+import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from utils import stats
 
 # -- helpers
 
+
 def plot_bar(x, y, xLabel, yLabel, title):
+    """Funcao para efetuar o plot de um grafico de barras
+
+    Args:
+        x ([]): valores em x
+        y ([type]): valor y correspondente a cada valor x
+        xLabel ([type]): [description]
+        yLabel ([type]): [description]
+        title ([type]): [description]
+    """
     plt.figure(figsize=(10, 6))
     plt.bar(x, y)
     plt.xlabel(xLabel)
@@ -18,9 +29,22 @@ def plot_bar(x, y, xLabel, yLabel, title):
     plt.tight_layout()
     plt.show()
 
+
 def plot_linear_with_std(x, mean, std, xLabel, yLabel, title):
+    """[summary]
+
+    [description]
+
+    Args:
+        x ([type]): [description]
+        mean ([type]): [description]
+        std ([type]): [description]
+        xLabel ([type]): [description]
+        yLabel ([type]): [description]
+        title ([type]): [description]
+    """
     plt.figure(figsize=(10, 6))
-    plt.errorbar(x, mean, yerr=std, fmt='-o', capsize=5, ecolor='red')
+    plt.errorbar(x, mean, yerr=std, fmt="-o", capsize=5, ecolor="red")
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
     plt.title(title)
@@ -29,11 +53,23 @@ def plot_linear_with_std(x, mean, std, xLabel, yLabel, title):
     plt.tight_layout()
     plt.show()
 
+
 def plot_boxplot(dataList, labels, xLabel, yLabel, title):
+    """[summary]
+
+    [description]
+
+    Args:
+        dataList ([type]): [description]
+        labels ([type]): [description]
+        xLabel ([type]): [description]
+        yLabel ([type]): [description]
+        title ([type]): [description]
+    """
     # dataList: lista de arrays/series, um para cada etiqueta
     # labels: lista de etiquetas correspondentes a dataList
     plt.figure(figsize=(10, 6))
-    plt.boxplot(dataList, labels=labels)
+    plt.boxplot(dataList, label=labels)
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
     plt.title(title)
@@ -41,56 +77,95 @@ def plot_boxplot(dataList, labels, xLabel, yLabel, title):
     plt.tight_layout()
     plt.show()
 
+
 # -- t6 logic
 
+
 def viz_events_per_period(df: pd.DataFrame, period: str, title_suffix: str):
+    """[summary]
+
+    [description]
+
+    Args:
+        df (pd.DataFrame): [description]
+        period (str): [description]
+        title_suffix (str): [description]
+    """
     dates, counts = stats.events_per_period(df, period)
     # Formatar datas para melhor leitura no gráfico
-    if period == 'D':
-         # dates é um DatetimeIndex
-         labels = [d.strftime('%Y-%m-%d') for d in dates]
+    if period == "D":
+        # dates é um DatetimeIndex
+        labels = [d.strftime("%Y-%m-%d") for d in dates]
     else:
-         labels = [d.strftime('%Y-%m') for d in dates]
-    
+        labels = [d.strftime("%Y-%m") for d in dates]
+
     plot_bar(labels, counts, "Data", "Número de Eventos", f"Eventos por {title_suffix}")
 
+
 def viz_linear_stats(df: pd.DataFrame, target: str):
+    """[summary]
+
+    [description]
+
+    Args:
+        df (pd.DataFrame): [description]
+        target (str): [description]
+    """
     # Média +/- Desvio Padrão
-    if target == 'Profundidade':
+    if target == "Profundidade":
         st = stats.stats_depth_month(df)
         unit = "km"
-    else: # Magnitude
+    else:  # Magnitude
         st = stats.stats_mag_month(df)
         unit = "Magn"
-    
-    labels = [d.strftime('%Y-%m') for d in st.index]
-    
-    plot_linear_with_std(labels, st['Mean'], st['Std'], "Mês", f"{target} ({unit})", f"Média e Desvio Padrão de {target} por Mês")
+
+    labels = [d.strftime("%Y-%m") for d in st.index]
+
+    plot_linear_with_std(
+        labels,
+        st["Mean"],
+        st["Std"],
+        "Mês",
+        f"{target} ({unit})",
+        f"Média e Desvio Padrão de {target} por Mês",
+    )
+
 
 def viz_boxplot(df: pd.DataFrame, target: str):
-    df = stats.convert_to_datetime(df)
+    """[summary]
+
+    [description]
+
+    Args:
+        df (pd.DataFrame): [description]
+        target (str): [description]
+
+    Returns:
+        [type]: [description]
+    """
     events = stats._get_unique_events(df)
-    
+
     # Agrupar por mês
-    grouped = events.set_index('Data').resample('ME')
-    
+    grouped = events.set_index("Data").resample("ME")
+
     data_to_plot = []
     labels = []
-    
+
     for name, group in grouped:
-        if target == 'Profundidade':
-             vals = group['Profundidade'].dropna().values
+        if target == "Profundidade":
+            vals = group["Profundidade"].dropna().values
         else:
-             # Extrair magnitudes máximas
-             def get_max_mag(mags):
-                vals = [float(m['Magnitude']) for m in mags if 'Magnitude' in m]
+            # Extrair magnitudes máximas
+            def get_max_mag(mags):
+                vals = [float(m["Magnitude"]) for m in mags if "Magnitude" in m]
                 return max(vals) if vals else np.nan
-             vals = group['Magnitudes'].apply(get_max_mag).dropna().values
-        
+
+            vals = group["Magnitudes"].apply(get_max_mag).dropna().values
+
         if len(vals) > 0:
             data_to_plot.append(vals)
-            labels.append(name.strftime('%Y-%m'))
-            
+            labels.append(name.strftime("%Y-%m"))
+
     plot_boxplot(data_to_plot, labels, "Mês", target, f"Boxplot de {target} por Mês")
 
 
@@ -108,17 +183,25 @@ VISUALS_MENU = """[1] Gráfico Barras: Eventos por Dia
 
 HEADER = "=== T6: Representação Gráfica ==="
 
+
 def visual_menu(df: pd.DataFrame):
+    """
+
+    [description]
+
+    Args:
+        df (pd.DataFrame): [description]
+    """
     while True:
         os.system("cls" if sys.platform == "windows" else "clear")
         print(HEADER + "\n" + VISUALS_MENU)
         usrIn = input("Opção: ").lower()
-        
+
         match usrIn:
             case "1":
-                viz_events_per_period(df, 'D', "Dia")
+                viz_events_per_period(df, "D", "Dia")
             case "2":
-                viz_events_per_period(df, 'M', "Mês")
+                viz_events_per_period(df, "M", "Mês")
             case "3":
                 viz_linear_stats(df, "Profundidade")
             case "4":
