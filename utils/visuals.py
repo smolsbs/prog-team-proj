@@ -1,24 +1,26 @@
 import os
 import sys
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 
 from utils import stats
 
 # -- helpers
 
 
-def plot_bar(x, y, xLabel, yLabel, title):
+def plot_bar(x: ArrayLike, y: ArrayLike, xLabel: str, yLabel: str, title: str) -> None:
     """Funcao para efetuar o plot de um grafico de barras
 
     Args:
-        x ([]): valores em x
-        y ([type]): valor y correspondente a cada valor x
-        xLabel ([type]): [description]
-        yLabel ([type]): [description]
-        title ([type]): [description]
+        x (ArrayLike): valores em x
+        y (ArrayLike): valor y correspondente a cada valor x
+        xLabel (str): Nome da linha x
+        yLabel (str): Nome da linha y
+        title (str): Titulo do grafico
     """
     plt.figure(figsize=(10, 6))
     plt.bar(x, y)
@@ -30,18 +32,18 @@ def plot_bar(x, y, xLabel, yLabel, title):
     plt.show()
 
 
-def plot_linear_with_std(x, mean, std, xLabel, yLabel, title):
-    """[summary]
-
-    [description]
+def plot_linear_with_std(
+    x: ArrayLike, mean: ArrayLike, std: ArrayLike, xLabel: str, yLabel: str, title: str
+) -> None:
+    """Funcao para efetuar o plot de um grafico linear
 
     Args:
-        x ([type]): [description]
-        mean ([type]): [description]
-        std ([type]): [description]
-        xLabel ([type]): [description]
-        yLabel ([type]): [description]
-        title ([type]): [description]
+        x (ArrayLike): valores em x
+        mean (ArrayLike): valores de media
+        std (ArrayLike): desvio-padrao
+        xLabel (str): Nome da linha x
+        yLabel (str): Nome da linha y
+        title (str): Titulo do grafico
     """
     plt.figure(figsize=(10, 6))
     plt.errorbar(x, mean, yerr=std, fmt="-o", capsize=5, ecolor="red")
@@ -54,17 +56,17 @@ def plot_linear_with_std(x, mean, std, xLabel, yLabel, title):
     plt.show()
 
 
-def plot_boxplot(dataList, labels, xLabel, yLabel, title):
-    """[summary]
-
-    [description]
+def plot_boxplot(
+    dataList: ArrayLike, labels: Sequence, xLabel: str, yLabel: str, title: str
+) -> None:
+    """Funcao para efetuar o plot de um grafico boxplot
 
     Args:
-        dataList ([type]): [description]
-        labels ([type]): [description]
-        xLabel ([type]): [description]
-        yLabel ([type]): [description]
-        title ([type]): [description]
+        dataList (ArrayLike): array com valores
+        labels (Sequence): array com nomes para cada valor em `dataList`
+        xLabel (str): Nome da linha x
+        yLabel (str): Nome da linha y
+        title (str): Titulo do grafico
     """
     # dataList: lista de arrays/series, um para cada etiqueta
     # labels: lista de etiquetas correspondentes a dataList
@@ -81,15 +83,13 @@ def plot_boxplot(dataList, labels, xLabel, yLabel, title):
 # -- t6 logic
 
 
-def viz_events_per_period(df: pd.DataFrame, period: str, title_suffix: str):
-    """[summary]
-
-    [description]
+def viz_events_per_period(df: pd.DataFrame, period: str, title_suffix: str) -> None:
+    """Prepara dados para serem visualizados por um grafico de barras
 
     Args:
-        df (pd.DataFrame): [description]
-        period (str): [description]
-        title_suffix (str): [description]
+        df (pd.DataFrame): dataframe com eventos
+        period (str): periodo, em dias ou meses
+        title_suffix (str): sufixo para o nome do titulo do grafico
     """
     dates, counts = stats.events_per_period(df, period)
     # Formatar datas para melhor leitura no gráfico
@@ -103,13 +103,11 @@ def viz_events_per_period(df: pd.DataFrame, period: str, title_suffix: str):
 
 
 def viz_linear_stats(df: pd.DataFrame, target: str):
-    """[summary]
-
-    [description]
+    """Prepara dados para serem visualizados por um grafico linear
 
     Args:
-        df (pd.DataFrame): [description]
-        target (str): [description]
+        df (pd.DataFrame): dataframe com eventos
+        target (str): Escolha entre magnitude ou profundidade para visualizar
     """
     # Média +/- Desvio Padrão
     if target == "Profundidade":
@@ -132,16 +130,11 @@ def viz_linear_stats(df: pd.DataFrame, target: str):
 
 
 def viz_boxplot(df: pd.DataFrame, target: str):
-    """[summary]
-
-    [description]
+    """Prepara dados para serem visualizados por um grafico tipo boxplot
 
     Args:
-        df (pd.DataFrame): [description]
-        target (str): [description]
-
-    Returns:
-        [type]: [description]
+        df (pd.DataFrame): dataframe com eventos
+        target (str): Escolha entre magnitude ou profundidade para visualizar
     """
     events = stats._get_unique_events(df)
 
@@ -185,12 +178,10 @@ HEADER = "=== T6: Representação Gráfica ==="
 
 
 def visual_menu(df: pd.DataFrame):
-    """
-
-    [description]
+    """Menu para visualização gráfica
 
     Args:
-        df (pd.DataFrame): [description]
+        df (pd.DataFrame): dataframe com eventos
     """
     while True:
         os.system("cls" if sys.platform == "windows" else "clear")
